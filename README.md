@@ -11,14 +11,6 @@ Generate technical architecture documentation from codebases with system diagram
 
 ## Installation
 
-### From Local Directory (Testing)
-
-```bash
-claude --plugin-dir /Users/thamac/CascadeProjects/architecture-documentation-plugin
-```
-
-### From GitHub (Once Published)
-
 ```bash
 /plugin install https://github.com/dha201/architecture-documentation-plugin
 ```
@@ -47,7 +39,6 @@ Or let Claude automatically detect when to use it based on your request for syst
 ## Output Format
 
 - Markdown document with embedded Eraser diagram code blocks
-- Research paper tone with formal vocabulary
 - Prose trade-offs analysis with specific metrics
 - Configuration tables with rationale
 - Concrete examples with code snippets and line numbers
