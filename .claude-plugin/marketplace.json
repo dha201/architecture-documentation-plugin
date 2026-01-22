@@ -1,0 +1,13 @@
+{
+    "name": "architecture-documentation",
+    "owner": {
+        "name": "dha201"
+    },
+    "plugins": [
+        {
+        "name": "architecture-documentation",
+        "source": ".",
+        "description": "Generates technical architecture documentation from codebases with C4 diagrams, component analysis, and detailed engineering rationale"
+        }
+    ]
+}

@@ -12,7 +12,8 @@ Generate technical architecture documentation from codebases with system diagram
 ## Installation
 
 ```bash
-/plugin install https://github.com/dha201/architecture-documentation-plugin
+/plugin marketplace add dha201/architecture-documentation-plugin
+/plugin install architecture-documentation
 ```
 
 ## Usage
