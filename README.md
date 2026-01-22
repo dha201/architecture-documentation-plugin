@@ -16,6 +16,8 @@ Generate technical architecture documentation from codebases with system diagram
 /plugin install architecture-documentation
 ```
 
+The marketplace will be registered as `dha201-plugins`.
+
 ## Usage
 
 Invoke the skill when you need architecture documentation:
