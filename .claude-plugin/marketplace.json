@@ -6,7 +6,7 @@
     "plugins": [
         {
         "name": "architecture-documentation",
-        "source": ".",
+        "source": "..",
         "description": "Generates technical architecture documentation from codebases with C4 diagrams, component analysis, and detailed engineering rationale"
         }
     ]
