@@ -1,0 +1,499 @@
+---
+name: architecture-documentation
+description: Generates technical architecture documentation from codebases with system diagrams, data flow analysis, component deep dives, and architectural decisions. Use when analyzing codebases for documentation, system design docs, technical handoffs, or architecture reviews.
+---
+
+# Architecture Documentation
+
+## Overview
+
+Generates in-depth technical architecture documentation from codebases. Produces engineer-focused documentation with system diagrams, data flow analysis, component deep dives, and architectural decision rationale.
+
+**Core principle:** Depth over breadth. Technical rigor over high-level summaries.
+
+## When to Use
+
+- User provides a codebase and asks for architecture documentation
+- User requests system design documentation
+- User needs technical documentation for handoff or onboarding
+- User asks to document architectural decisions
+- User needs diagrams showing system structure and data flow
+
+## Workflow Checklist
+
+Copy this checklist and check off items as you complete them:
+
+```
+Architecture Documentation Progress:
+- [ ] Phase 1: Codebase exploration (structure, entry points, dependencies)
+- [ ] Phase 2: Components identified (services, modules, databases)
+- [ ] Phase 3: Data flow traced (request lifecycle, transformations)
+- [ ] Phase 4: Business context extracted (README, comments, code)
+- [ ] Phase 5: Documentation generated following structure below
+- [ ] Phase 6: Diagrams created with Eraser syntax
+- [ ] Phase 7: Engineering analysis complete (all "why" questions answered)
+- [ ] Phase 8: Quality validation passed
+```
+
+## Document Structure
+
+Follow this structure (see example-output.pdf for full reference):
+
+### Required Sections
+
+1. **Abstract**
+   - Formal research paper abstract after table of contents
+   - Delineates system purpose, architecture approach, key technologies
+   - Written in formal tone
+
+2. **Context & Scope**
+   - Business goals, stakeholders
+   - System context diagram (Eraser)
+
+3. **Architecture Constraints & Principles**
+   - Why this approach? Immutable rules
+
+4. **High-Level Architecture**
+   - Container diagram showing major components
+   - Data flow walkthrough with transformations (Input → Output at each stage)
+
+5. **Component Deep Dives**
+   - **Component Responsibility Matrix:** Table summarizing all components (see template below)
+   - **Individual Component Sections** (repeat for each component):
+     - **Purpose:** One sentence
+     - **Implementation Details:** Stack, algorithms, dependencies (with WHY chosen)
+     - **Engineering Analysis:** Trade-offs, configuration rationale, edge cases
+     - Component diagram if complex
+
+6. **Cross-Cutting Concerns**
+   - Observability (logging, metrics, tracing)
+   - Failure modes & recovery
+   - Deployment & infrastructure
+
+7. **Decision Log (ADRs)**
+   - Major decisions with context and consequences
+
+### Optional Appendices
+
+**Appendix A: Technology Stack Summary**
+- Table organized by category (Backend, AI/ML, Data Storage, Infrastructure, etc.)
+- Columns: Technology | Version | Purpose | Architectural Layer
+- Quick reference for all technologies used
+
+**Appendix B: API Endpoint Reference**
+- Complete endpoint documentation
+- For each endpoint: Method, Path, Auth requirements, Request/Response schemas
+- Include streaming event types if applicable
+- Error response codes and formats
+
+**Template format:**
+```markdown
+## 4. Component Deep Dives
+
+### Component Responsibility Matrix
+
+| Component | Primary Responsibility | Key Dependencies | Input/Output | Failure Modes | Recovery Strategies |
+|-----------|----------------------|------------------|--------------|---------------|--------------------|
+| [Name] | What it does (1 sentence) | Services/DBs it needs | What goes in → What comes out | How it breaks | How it recovers |
+| [Name] | ... | ... | ... | ... | ... |
+
+### 4.1 [Component Name]
+[Eraser diagram of internal logic]
+
+**Purpose:** One sentence summary.
+
+**Implementation Details (The "How"):**
+- **Stack:** Technologies used
+- **Key Algorithms:** How does it work?
+- **Dependencies:** Libraries/services with citation (why chosen over alternatives)
+
+**Engineering Analysis (The "Why"):**
+- **Trade-offs:** Why this approach? What was rejected and why?
+- **Configuration:** Why these specific settings? (timeouts, limits, buffer sizes)
+- **State Management:** Stateless or stateful? Where persisted? How consistent?
+- **Edge Cases:** What errors are handled? Retry logic? Failure modes?
+```
+
+## Workflow
+
+### Phase 1: Codebase Exploration
+
+**Determine documentation type first:**
+
+- **Creating brand new documentation?** → Follow complete workflow below
+- **Updating existing documentation?** → Read existing docs first, update changed sections only, validate updates
+
+**For new documentation:**
+
+1. **Understand project structure:**
+   - Read package.json, requirements.txt, go.mod, Cargo.toml (dependency files)
+   - Identify main entry points (main.py, index.js, main.go, etc.)
+   - Map out directory structure
+
+2. **Identify components:**
+   - Find services, modules, packages
+   - Identify databases, message queues, external APIs
+   - Map dependencies between components
+
+3. **Analyze data flow:**
+   - Trace request lifecycle from entry to response
+   - Document transformations at each stage
+   - Capture exact payload examples when possible
+
+### Phase 2: Documentation Generation
+
+1. **Abstract:**
+   - Write formal research paper abstract
+   - Delineate system purpose, architectural approach, key technologies
+   - Example: "This document delineates the architectural design of [System Name], a cloud-native platform engineered to [purpose]. Leveraging [technologies], the system [key approach] to deliver [outcomes]. The architecture adheres to the C4 model, decomposing abstractions from high-level system context to granular component implementation."
+
+2. **Business Context:**
+   - Extract from README, comments, or infer from code
+   - Identify stakeholders (who uses this?)
+
+3. **System Context Diagram:**
+   - Create Eraser diagram (see eraser-syntax.md)
+   - Show: system as a box, external actors (users, services, databases), connections
+
+4. **High-Level Architecture:**
+   - Create C4 Container diagram showing major components
+   - Document data flow with concrete example ("hero scenario")
+   - Show transformations: Input → Output at each stage
+
+5. **Component Deep Dives:**
+   - **Create Component Responsibility Matrix first:**
+     - Table with columns: Component | Primary Responsibility | Key Dependencies | Input/Output | Failure Modes | Recovery Strategies
+     - One row per major component
+     - Provides quick reference for all components before detailed sections
+   - For each major component:
+     - Purpose (one sentence)
+     - Implementation details (stack, algorithms, dependencies)
+     - Engineering analysis (WHY this way, trade-offs, configuration rationale)
+     - Create component-level diagram if complex
+
+6. **Cross-Cutting Concerns:**
+   - Document observability approach
+   - Identify failure modes from code (error handling, retries)
+   - Extract deployment configuration
+
+7. **Decision Log:**
+   - Document WHY decisions were made
+   - Include context and consequences
+
+7. **Optional Appendices (if applicable):**
+   - **Technology Stack Summary:** Extract all technologies from dependency files and component details; organize by category
+   - **API Endpoint Reference:** Document public/internal APIs with request/response schemas from code
+
+### Phase 3: Diagram Generation
+
+For each diagram, generate Eraser diagram code (see eraser-syntax.md and icon-reference.md):
+
+**Mark all diagram code blocks:**
+````
+```
+// Eraser diagram: System Context
+Users [icon: users]
+System [icon: server]
+Database [icon: database]
+
+Users > System: HTTP Requests
+System > Database: SQL Queries
+```
+````
+
+**Reference materials for diagrams:**
+- **eraser-syntax.md** - Complete syntax reference (nodes, groups, connections, properties)
+- **icon-reference.md** - 1600+ icons (AWS, GCP, Azure, K8s, tech logos)
+- **diagram-examples.md** - Real-world examples with complete code
+
+## Engineering Analysis Requirements
+
+For each component, answer ALL these questions with specifics (not vague statements):
+
+### Trade-offs
+- What alternatives were considered?
+- Why was this approach chosen over alternatives?
+- What are the downsides of this choice?
+
+### Configuration
+- Why these specific values? (timeouts, limits, buffer sizes)
+- What happens if misconfigured?
+- How were these values determined? (SLAs, benchmarks, constraints)
+
+### State Management
+- Stateless or stateful?
+- Where is state persisted?
+- How is consistency maintained?
+- What happens on restart?
+
+### Edge Cases
+- What errors are explicitly handled?
+- What retry logic exists?
+- What are the failure modes?
+- How does the system recover?
+
+## Documentation Quality Validation
+
+After generating documentation, validate immediately using this checklist:
+
+### 1. Structural Validation
+- [ ] All required sections present (Context, Constraints, Architecture, Components, Cross-Cutting, Decisions)
+- [ ] Component Responsibility Matrix table present at start of Component Deep Dives section
+- [ ] Matrix includes all major components with all required columns (Component, Primary Responsibility, Key Dependencies, Input/Output, Failure Modes, Recovery Strategies)
+- [ ] Each component has Purpose, Implementation Details, Engineering Analysis
+- [ ] Data flow walkthrough includes Input → Output transformations
+- [ ] Diagrams use correct Eraser syntax (verified against eraser-syntax.md)
+- [ ] All diagram code blocks marked with `// Eraser diagram: [name]`
+
+### 2. Depth Validation (Critical)
+- [ ] Every technical decision has "why" explanation (not just "what")
+- [ ] Trade-offs documented (what alternatives were rejected and why)
+- [ ] Configuration values justified (why these specific settings, how determined)
+- [ ] Failure modes documented (what breaks, how system recovers)
+- [ ] Concrete examples included (real payloads, actual code snippets, exact transformations)
+- [ ] Library choices explained (why this library over alternatives, with specifics)
+
+### 3. Diagram Validation
+- [ ] Icons match actual technologies (checked against icon-reference.md)
+- [ ] Connections labeled with what flows (data format, protocol)
+- [ ] Groups show logical boundaries (VPCs, subnets, services)
+- [ ] Direction set appropriately (direction right/down/etc.)
+
+### 4. Example Quality Check
+- [ ] Payload examples show exact JSON/data structures
+- [ ] Transformations show before AND after
+- [ ] Code snippets include file paths (e.g., "in auth.py:42")
+- [ ] No vague terms ("handles requests", "processes data")
+
+**If validation fails:**
+1. Note each gap with specific section reference
+2. Add missing content
+3. Run validation checklist again
+4. Only finalize when all checks pass
+
+## Good vs. Bad Examples
+
+### Bad Example - Vague and Shallow
+
+```markdown
+### API Gateway
+
+**Purpose:** Handles API requests.
+
+**Implementation:**
+- Uses FastAPI
+- Routes requests to backend services
+
+**Why:** It's fast and easy to use.
+```
+
+**Problems:** No WHY for library choice, no trade-offs, no configuration rationale, no edge cases, generic statements.
+
+### Good Example - Component Responsibility Matrix
+
+```markdown
+### Component Responsibility Matrix
+
+| Component | Primary Responsibility | Key Dependencies | Input/Output | Failure Modes | Recovery Strategies |
+|-----------|----------------------|------------------|--------------|---------------|--------------------|
+| **Query Router** | Routes user queries to specialized agents via LLM intent classification | Azure OpenAI (gpt-5-mini) | User query (string) → Agent selection + args (JSON) | LLM fails to select tool, API timeout, non-English input | Fall back to default agent; log exceptions to App Insights; reject non-English with fixed response |
+| **PostgreSQL DB** | Persistent storage for user profiles, query history, embeddings | PostGIS extension, pgvector | SQL queries → Result sets | Connection pool exhaustion, deadlocks, disk full | Auto-reconnect with exponential backoff; query timeout (30s); read replicas for queries |
+| **Redis Cache** | Session state, rate limiting, hot data caching | None (standalone) | Key-value GET/SET → Cached data or miss | Cache miss, eviction, connection failure | Graceful degradation to DB; 5-minute TTL; connection retry (3x with backoff) |
+```
+
+**What makes this good:** Concise summary of each component's role, dependencies, data flow, failure scenarios, and recovery—providing quick reference before detailed sections.
+
+### Good Example - Detailed Component Section
+
+```markdown
+### Query Router (stream.py)
+
+**Purpose:** Routes user queries to appropriate specialized agent based on query intent.
+
+**Implementation Details:**
+- **Stack:** Python 3.11, FastAPI, AsyncAzureOpenAI v1.x
+- **Key Algorithm:** LLM-based intent classification via function calling
+- **Dependencies:**
+  - `openai==1.x`: Official SDK with native async streaming; type-safe; actively maintained. Chosen over `langchain` for direct control and lower overhead.
+  - `httpx==0.x`: Required for custom timeout configuration; `trust_env=False` prevents proxy interference
+
+**Engineering Analysis:**
+- **Trade-offs:**
+  - LLM-based router vs keyword regex: Regex is 10x faster but brittle and fails on paraphrased queries. LLM handles ambiguity and phrasing variations with 95%+ accuracy vs 60% for regex in testing.
+  - Model Selection (gpt-5-mini): Classification is simpler than generation. Mini model offers 10x cost reduction ($0.15 vs $1.50 per 1M tokens) and lower latency (~200ms vs ~800ms) compared to gpt-4o, without sacrificing routing accuracy (both achieved 96% in our test set).
+
+- **Configuration:**
+  - `timeout_keep_alive=300s`: LLM responses can take 30-60s for complex queries; 5-minute keep-alive prevents client disconnect during long-running requests. Determined from p95 latency metrics showing 45s max.
+  - `httpx.Timeout(read=30.0)`: 30s read timeout balances allowing slow responses and failing fast on stalled connections. Based on upstream SLA of 25s + 5s buffer.
+  - `max_retries=0`: Streaming responses cannot be retried mid-stream; client must handle retry. Retrying would cause duplicate partial responses.
+
+- **State Management:** Stateless component; all routing decisions made per-request from query content alone. No session state persisted.
+
+- **Edge Cases:**
+  - No Tool Selection: If LLM fails to select tool (< 0.1% of requests), system falls back to direct response with default agent.
+  - Execution Exceptions: All tool exceptions caught, logged with full traceback to Application Insights, and returned to user via friendly SSE error message (HTTP 200 with error type in stream).
+  - Non-English Input: Intercepted immediately via Router LLM system prompt ("Only process English queries"). Returns fixed fallback response without further LLM calls, preventing unnecessary inference costs for unsupported languages.
+```
+
+**What makes this good:** Specific numbers, alternatives considered, trade-off analysis, configuration rationale linked to requirements, concrete failure scenarios.
+
+## Depth Focus Areas
+
+Prioritize technical depth in:
+
+1. **Data Transformations** - Show exact Input → Output at each stage
+2. **Library Choices** - Document WHY chosen (performance numbers, features, alternatives rejected)
+3. **Configuration Rationale** - Explain WHY each value (link to SLAs, benchmarks, constraints)
+4. **Failure Handling** - Document retry logic, fallbacks, circuit breakers with specific thresholds
+5. **Performance Decisions** - Buffer sizes, connection pools, cache strategies with justification
+6. **Security Measures** - Auth, encryption, validation, rate limiting with rationale
+
+## Writing Style: Research Paper Tone
+
+**Adopt formal language throughout:**
+
+**Formal Vocabulary:**
+- "sends" → "transmits"
+- "uses" → "employs/utilizes"
+- "shows" → "depicts/delineates/illustrates"
+- "allows" → "permits/enables"
+- "handles" → "accommodates/addresses"
+- "creates" → "instantiates"
+- "needs" → "requires"
+- "gets" → "retrieves"
+- Expand all contractions ("doesn't" → "does not")
+
+**Diagram Presentation:**
+- Remove "What It Shows" bullet lists (diagrams are self-explanatory)
+- Figure labels: Use `**Figure X: Title**` only (no descriptive subtitle)
+- Remove explicit "How It Works:" headers - numbered explanations flow naturally after figure
+- Use numerals (1, 2, 3) instead of "Step 1", "Step 2", "Step 3"
+
+**Trade-offs Format:**
+- Write trade-offs in **prose format** with detailed examples and specific numbers
+- Each trade-off: decision → alternatives considered → rationale with metrics
+- Example: "gpt-4o for code generation over gpt-5-mini. Code generation requires stronger reasoning capabilities. gpt-4o demonstrates significantly better performance on code-related tasks, justifying the higher token cost ($X vs $Y per 1M tokens)."
+- Keep Configuration Rationale and External Libraries as **tables** (not prose)
+
+**Header Usage:**
+- Use headers sparingly
+- Prefer numbered lists for processes
+- Keep content concise and flowing
+
+## Common Mistakes to Avoid
+
+**Don't:**
+- Write high-level summaries without technical details
+- Skip the "why" behind decisions
+- Generate generic diagrams without real component names
+- Document WHAT without explaining WHY
+- Use vague or informal language ("handles requests", "processes data", "improves performance")
+- Include time-sensitive information ("If doing this before August 2025...")
+- Mix terminology (don't alternate "API endpoint", "URL", "route", "path" - pick one)
+- Use "Step" terminology or "How It Works:" headers
+- Format trade-offs as tables
+- Add "What It Shows" sections to diagrams
+
+**Do:**
+- Include concrete examples (exact payloads, actual code snippets with line numbers)
+- Write trade-offs in prose with specific numbers and alternatives considered
+- Use formal language throughout
+- Use real component names, library versions, specific technologies
+- Document failure scenarios and recovery mechanisms
+- Show data transformations with before/after examples
+- Justify every configuration value
+- Use consistent terminology throughout
+- Let diagram explanations flow naturally with numbered points
+
+## Reference Materials
+
+This skill includes comprehensive reference materials:
+
+- **eraser-syntax.md** - Complete Eraser diagram syntax guide with all features
+- **icon-reference.md** - Full icon catalog (1600+ icons: AWS, GCP, Azure, K8s, tech logos)
+- **diagram-examples.md** - Real-world diagram examples with full code
+- **example-output.pdf** - Gold standard example of expected documentation quality
+
+**When generating diagrams, reference these files to:**
+- Find correct icon names (use icon-reference.md)
+- Learn proper syntax for groups, connections, properties (use eraser-syntax.md)
+- See real-world patterns and examples (use diagram-examples.md)
+
+## Eraser Diagram Integration
+
+After generating documentation:
+1. Extract all Eraser diagram code blocks (marked with `// Eraser diagram: [name]`)
+2. Use the `render-eraser-diagrams.js` script to convert to images
+3. Optionally replace code blocks with embedded images in final document
+
+## Optional Appendices Templates
+
+### Appendix A: Technology Stack Summary
+
+```markdown
+## Appendix A: Technology Stack Summary
+
+| Category | Technology | Version | Purpose | Layer |
+|----------|-----------|---------|---------|-------|
+| **Backend** | FastAPI | 0.104.x | HTTP framework, async routing | Application |
+| **AI/ML** | Azure OpenAI | gpt-4o, gpt-5-mini | LLM inference, intent classification | AI Service |
+| **Data Storage** | PostgreSQL | 15.x | Persistent storage, user profiles | Data |
+| **Observability** | Application Insights | Latest | APM, distributed tracing | Infrastructure |
+```
+
+### Appendix B: API Endpoint Reference
+
+```markdown
+## Appendix B: API Endpoint Reference
+
+### POST /api/chat
+
+**Purpose:** Stream chat responses with agent routing
+
+**Authentication:** Bearer JWT (HS256)
+
+**Request:**
+```json
+{
+  "query": "What is the status of order #12345?",
+  "user_id": "user_abc123"
+}
+```
+
+**Response:** Server-Sent Events (SSE)
+
+**Event Types:**
+- `agent_selected`: `{"agent": "order_lookup", "args": {...}}`
+- `content_delta`: `{"delta": "The order status is..."}`
+- `done`: `{"finish_reason": "stop"}`
+
+**Error Responses:**
+- `401 Unauthorized`: Invalid/missing JWT
+- `429 Too Many Requests`: Rate limit exceeded
+```
+
+## Output Format
+
+Generate a single markdown file with:
+- All sections from the template structure
+- Eraser diagram code blocks (marked with `// Eraser diagram: [name]`)
+- Inline code examples where relevant (with file paths and line numbers)
+- Tables for configuration rationale, trade-offs analysis
+- Concrete examples throughout
+- Exact payload transformations showing before/after
+- Optional appendices if system has APIs or uses multiple technologies
+
+## Final Checklist
+
+Before finalizing documentation:
+
+- [ ] All 8 checklist phases completed
+- [ ] All validation checks passed
+- [ ] Every component has detailed engineering analysis
+- [ ] All diagrams use correct Eraser syntax with proper icons
+- [ ] No vague statements (all specifics with numbers, examples)
+- [ ] Consistent terminology used throughout
+- [ ] Trade-offs explained for major decisions
+- [ ] Configuration values justified
+- [ ] Failure modes documented
+- [ ] Real examples included (payloads, code with line numbers)

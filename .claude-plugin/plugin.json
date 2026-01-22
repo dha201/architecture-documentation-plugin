@@ -1,0 +1,11 @@
+{
+    "name": "architecture-documentation",
+    "description": "Generates technical architecture documentation from codebases with C4 diagrams, component analysis, and Eraser diagrams. Produces research-paper-style docs with component responsibility matrices, API references, and technology stack summaries.",
+    "version": "1.0.0",
+    "author": {
+        "name": "Superpowers Skills"
+    },
+    "homepage": "https://github.com/dha201/architecture-documentation-plugin",
+    "repository": "https://github.com/dha201/architecture-documentation-plugin",
+    "license": "MIT"
+}
