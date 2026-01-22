@@ -6,10 +6,7 @@
     "plugins": [
         {
         "name": "architecture-documentation",
-        "source": {
-            "source": "url",
-            "url": "https://github.com/dha201/architecture-documentation-plugin.git"
-        },
+        "source": "./plugins/architecture-documentation",
         "description": "Generates technical architecture documentation from codebases with C4 diagrams, component analysis, and detailed engineering rationale"
         }
     ]
