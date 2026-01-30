@@ -1,13 +1,38 @@
 # Architecture Documentation Plugin
 
-Generate technical architecture documentation from codebases with system diagrams, component analysis, and detailed engineering rationale.
+Three skills for technical documentation: architecture docs with C4 diagrams, technical debrief outlines, and a human writing style toolkit.
 
-## Features
+## Skills
 
-- **C4 Model Diagrams**: System context, container, and component diagrams using Eraser syntax
-- **Component Responsibility Matrix**: Quick-reference table of all components with responsibilities, dependencies, failure modes, and recovery strategies
-- **Engineering Depth**: Configuration rationale, library choices, performance decisions with specific metrics
-- **Optional Appendices**: Technology stack summary and API endpoint reference
+### architecture-documentation
+
+Generates architecture documentation from codebases with system diagrams, component analysis, and engineering rationale.
+
+- C4 Model Diagrams (system context, container, component) using Eraser syntax
+- Component Responsibility Matrix with dependencies, failure modes, recovery strategies
+- Configuration rationale, library choices, performance decisions with metrics
+- Decision log (ADRs) with context and consequences
+- Optional appendices: tech stack summary, API endpoint reference
+
+### technical-debrief-outline
+
+Creates structured presentation outlines for technical debriefs. Optimized for mixed audiences (engineers, PMs, executives).
+
+- Problem-solution framing with real examples
+- Mermaid diagrams for architecture sections
+- Comparison tables (v1 vs v2, POC vs production)
+- Presenter callout quotes and audience Q&A prep
+- Includes a blank template in `references/outline_template.md`
+
+### human-writing-style
+
+Strips robotic AI patterns from any written content. Produces writing that sounds like a person wrote it.
+
+- Banned word list (delve, leverage, robust, etc.)
+- Short sentence / varied rhythm techniques
+- Specificity over vagueness — numbers beat adjectives
+- Coffee shop test: if it sounds like a LinkedIn post, rewrite it
+- Works on docs, outlines, reports, changelogs, anything with words
 
 ## Installation
 
@@ -20,36 +45,17 @@ The marketplace will be registered as `dha201-plugins`.
 
 ## Usage
 
-Invoke the skill when you need architecture documentation:
-
 ```
 @architecture-documentation Generate architecture documentation for this codebase
+@technical-debrief-outline Prepare a debrief for stakeholders
+@human-writing-style Rewrite this to sound human
 ```
 
-Or let Claude automatically detect when to use it based on your request for system design docs, technical handoffs, or architecture reviews.
-
-## What It Generates
-
-1. **Abstract** - Formal overview of system purpose and approach
-2. **Context & Scope** - Business goals with system context diagram
-3. **Architecture Constraints & Principles** - Design decisions and immutable rules
-4. **High-Level Architecture** - Container diagram with data flow walkthrough
-5. **Component Deep Dives** - Responsibility matrix + detailed analysis per component
-6. **Cross-Cutting Concerns** - Observability, failure modes, deployment
-7. **Decision Log** - ADRs with context and consequences
-8. **Optional Appendices** - Tech stack summary and API reference
-
-## Output Format
-
-- Markdown document with embedded Eraser diagram code blocks
-- Prose trade-offs analysis with specific metrics
-- Configuration tables with rationale
-- Concrete examples with code snippets and line numbers
+Or let Claude detect when to use them based on your request.
 
 ## Requirements
 
 - Claude Code 1.0.33 or later
-- Codebase with dependency files (package.json, requirements.txt, etc.)
 
 ## License
 

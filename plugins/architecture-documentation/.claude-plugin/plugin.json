@@ -1,6 +1,6 @@
 {
     "name": "architecture-documentation",
-    "description": "Generates technical architecture documentation from codebases with C4 diagrams, component analysis, and Eraser diagrams. Produces research-paper-style docs with component responsibility matrices, API references, and technology stack summaries.",
+    "description": "Architecture documentation, technical debrief outlines, and human writing style. Generates C4 diagrams, component analysis, presentation outlines for stakeholders, and applies natural writing techniques to strip AI patterns from content.",
     "version": "1.0.0",
     "author": {
         "name": "Superpowers Skills"

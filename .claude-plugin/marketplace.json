@@ -7,7 +7,7 @@
         {
         "name": "architecture-documentation",
         "source": "./plugins/architecture-documentation",
-        "description": "Generates technical architecture documentation from codebases with C4 diagrams, component analysis, and detailed engineering rationale"
+        "description": "Architecture docs with C4 diagrams, technical debrief outlines, and human writing style toolkit"
         }
     ]
 }
