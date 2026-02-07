@@ -1,489 +1,576 @@
-# Eraser Diagram Examples
+# PlantUML Diagram Examples (via Kroki)
 
-Real-world diagram examples demonstrating Eraser's diagram-as-code syntax.
+Real-world architecture diagram examples using PlantUML with cloud icons, rendered via Kroki.io.
 
-**Official Examples:** https://docs.eraser.io/docs/examples
-
-## Example 1: AWS Three-Tier Web Application
-
-```
-direction right
-colorMode bold
-
-// External users
-Users [icon: users, label: "Web Users"]
-
-// AWS Infrastructure
-AWS Cloud [icon: aws-cloud] {
-
-  VPC [icon: aws-vpc, label: "Production VPC"] {
-
-    // Web Tier (Public)
-    Public Subnet [icon: aws-public-subnet, color: green] {
-      ALB [icon: aws-elb, label: "Application Load Balancer"]
-      NAT Gateway [icon: aws-nat-gateway]
-    }
-
-    // App Tier (Private)
-    Private Subnet [icon: aws-private-subnet, color: blue] {
-      Web Server 1 [icon: aws-ec2, label: "EC2 (Web)"]
-      Web Server 2 [icon: aws-ec2, label: "EC2 (Web)"]
-
-      App Server 1 [icon: aws-lambda, label: "Lambda (API)"]
-      App Server 2 [icon: aws-lambda, label: "Lambda (API)"]
-
-      Cache [icon: aws-elasticache, shape: cylinder]
-    }
-
-    // Data Tier (Private)
-    Database Subnet [icon: aws-private-subnet, color: red] {
-      Primary DB [icon: aws-rds, label: "RDS Primary"]
-      Replica DB [icon: aws-rds, label: "RDS Replica"]
-    }
-  }
-
-  // Static assets
-  S3 [icon: aws-s3, label: "Static Assets"]
-  CloudFront [icon: aws-cloudfront, label: "CDN"]
-}
-
-// Connection flows
-Users > CloudFront: HTTPS
-CloudFront > S3: Static Files
-CloudFront > ALB: API Requests
-
-ALB > Web Server 1, Web Server 2: Distribute Load
-
-Web Server 1, Web Server 2 > App Server 1, App Server 2: Process
-
-App Server 1, App Server 2 > Cache: Cache Lookup
-App Server 1, App Server 2 > Primary DB: Read/Write
-Primary DB > Replica DB: Replicate
-```
-
-**Use case:** Standard web application with load balancing, caching, and database replication.
+**Render any example:** `curl -X POST https://kroki.io/plantuml/svg -H "Content-Type: text/plain" -d '<diagram code>'`
 
 ---
 
-## Example 2: Microservices Architecture
+## Example 1: AWS Three-Tier Web Application
 
-```
-direction down
-styleMode shadow
+```plantuml
+@startuml
+!include <awslib/AWSCommon>
+!include <awslib/AWSSimplified.puml>
+!include <awslib/Compute/EC2>
+!include <awslib/Compute/Lambda>
+!include <awslib/Database/Aurora>
+!include <awslib/Database/ElastiCache>
+!include <awslib/NetworkingContentDelivery/CloudFront>
+!include <awslib/NetworkingContentDelivery/ElasticLoadBalancing>
+!include <awslib/Storage/SimpleStorageService>
+!include <awslib/General/Users>
+!include <awslib/GroupIcons/all>
 
-// API Gateway
-API Gateway [icon: aws-api-gateway, color: purple]
+left to right direction
+skinparam linetype polyline
 
-// Microservices
-Services [color: blue] {
-  User Service [icon: docker, label: "User Service\n(Node.js)"]
-  Order Service [icon: docker, label: "Order Service\n(Java)"]
-  Payment Service [icon: docker, label: "Payment Service\n(Python)"]
-  Notification Service [icon: docker, label: "Notification Service\n(Go)"]
+Users(users, "Web Users", "")
+
+AWSCloudGroup(cloud, "AWS Cloud") {
+  CloudFront(cdn, "CloudFront CDN", "")
+  SimpleStorageService(s3, "Static Assets", "")
+
+  VPCGroup(vpc, "Production VPC") {
+    PublicSubnetGroup(pub, "Public Subnet") {
+      ElasticLoadBalancing(alb, "ALB", "")
+    }
+    PrivateSubnetGroup(priv, "Private Subnet") {
+      EC2(web1, "Web Server 1", "t3.medium")
+      EC2(web2, "Web Server 2", "t3.medium")
+      ElastiCache(cache, "Redis Cache", "r6g.large")
+    }
+    PrivateSubnetGroup(data, "Data Subnet") {
+      Aurora(primary, "Aurora Primary", "PostgreSQL 15")
+      Aurora(replica, "Aurora Replica", "Read-only")
+    }
+  }
 }
 
-// Databases per service
-Databases [color: green] {
-  User DB [icon: postgres, shape: cylinder, label: "PostgreSQL"]
-  Order DB [icon: mongodb, shape: cylinder, label: "MongoDB"]
-  Payment DB [icon: mysql, shape: cylinder, label: "MySQL"]
-}
-
-// Message Queue
-Message Bus [icon: kafka, shape: queue, label: "Kafka Event Bus"]
-
-// Service Registry
-Service Registry [icon: kubernetes, label: "Kubernetes"]
-
-// Connections
-API Gateway > User Service, Order Service, Payment Service: REST
-
-User Service > User DB
-Order Service > Order DB
-Payment Service > Payment DB
-
-Order Service > Message Bus: Publish OrderCreated
-Payment Service < Message Bus: Subscribe
-Notification Service < Message Bus: Subscribe
-
-Service Registry > User Service, Order Service, Payment Service, Notification Service: Service Discovery
+users --> cdn : HTTPS
+cdn --> s3 : Static files
+cdn --> alb : API requests
+alb --> web1 : Distribute load
+alb --> web2 : Distribute load
+web1 --> cache : Cache lookup
+web2 --> cache : Cache lookup
+web1 --> primary : Read/Write
+web2 --> primary : Read/Write
+primary --> replica : Replication
+@enduml
 ```
 
-**Use case:** Event-driven microservices with database-per-service pattern.
+**Use case:** Standard web app with load balancing, caching, and database replication.
+
+---
+
+## Example 2: Microservices with Event-Driven Architecture
+
+```plantuml
+@startuml
+!include <awslib/AWSCommon>
+!include <awslib/Compute/Lambda>
+!include <awslib/ApplicationIntegration/APIGateway>
+!include <awslib/ApplicationIntegration/SimpleQueueService>
+!include <awslib/ApplicationIntegration/SimpleNotificationService>
+!include <awslib/ApplicationIntegration/EventBridge>
+!include <awslib/Database/DynamoDB>
+!include <awslib/Database/Aurora>
+!include <awslib/General/Users>
+
+left to right direction
+skinparam linetype polyline
+
+Users(users, "Customers", "")
+APIGateway(api, "API Gateway", "REST v2")
+
+package "Order Domain" {
+  Lambda(orderFn, "Order Service", "Node.js 20")
+  DynamoDB(orderDb, "Orders", "On-demand")
+}
+
+package "Payment Domain" {
+  Lambda(payFn, "Payment Service", "Python 3.12")
+  Aurora(payDb, "Payments", "PostgreSQL")
+}
+
+package "Notification Domain" {
+  Lambda(notifyFn, "Notify Service", "Go 1.22")
+  SimpleNotificationService(sns, "Alerts", "Email + SMS")
+}
+
+EventBridge(bus, "Event Bus", "Default")
+SimpleQueueService(dlq, "Dead Letter Queue", "Standard")
+
+users --> api : HTTPS/JSON
+api --> orderFn : POST /orders
+orderFn --> orderDb : PutItem
+orderFn --> bus : OrderCreated event
+bus --> payFn : Route to payment
+bus --> notifyFn : Route to notification
+payFn --> payDb : INSERT payment
+notifyFn --> sns : Send alert
+bus ..> dlq : Failed events
+@enduml
+```
+
+**Use case:** Event-driven microservices with EventBridge, database-per-service, and dead letter queue.
 
 ---
 
 ## Example 3: Data ETL Pipeline
 
+```plantuml
+@startuml
+!include <awslib/AWSCommon>
+!include <awslib/Analytics/Glue>
+!include <awslib/Analytics/Athena>
+!include <awslib/Analytics/Kinesis>
+!include <awslib/Analytics/QuickSight>
+!include <awslib/Analytics/ManagedStreamingforApacheKafka>
+!include <awslib/Analytics/Redshift>
+!include <awslib/Analytics/LakeFormation>
+!include <awslib/Storage/SimpleStorageService>
+!include <awslib/Database/RDS>
+
+left to right direction
+skinparam linetype polyline
+
+package "Data Sources" {
+  RDS(srcDb, "Oracle DB", "Transactional")
+  Kinesis(stream, "Kinesis Stream", "Real-time events")
+}
+
+package "Ingestion" {
+  ManagedStreamingforApacheKafka(kafka, "MSK", "Kafka 3.x")
+  SimpleStorageService(rawS3, "S3 Raw Zone", "Landing")
+}
+
+package "Processing" {
+  Glue(glue, "Glue ETL", "Spark jobs")
+  LakeFormation(lake, "Lake Formation", "Governance")
+  SimpleStorageService(procS3, "S3 Processed", "Curated")
+}
+
+package "Analytics" {
+  Redshift(rs, "Redshift", "ra3.xlplus")
+  Athena(athena, "Athena", "Ad-hoc SQL")
+  QuickSight(qs, "QuickSight", "Dashboards")
+}
+
+srcDb --> kafka : CDC stream
+stream --> kafka : Real-time events
+kafka --> rawS3 : Land raw data
+rawS3 --> glue : Batch ETL
+glue --> lake : Apply governance
+lake --> procS3 : Write curated data
+procS3 --> rs : COPY load
+procS3 --> athena : Query in-place
+rs --> qs : Visualize
+athena --> qs : Visualize
+@enduml
 ```
-direction right
-colorMode pastel
 
-// Data Sources
-Sources [color: blue, label: "Data Sources"] {
-  Oracle DB [icon: oracle, label: "Oracle\nTransactional DB"]
-  REST API [icon: rest-api, label: "External API"]
-  CSV Files [icon: csv, label: "CSV Uploads"]
-}
-
-// Ingestion Layer
-Ingestion [color: green, label: "Data Ingestion"] {
-  Kafka [icon: kafka, shape: queue, label: "Kafka Streams"]
-  S3 Raw [icon: aws-s3, label: "S3 Raw Zone"]
-}
-
-// Processing Layer
-Processing [color: orange, label: "Data Processing"] {
-  Spark [icon: spark, label: "Spark ETL"]
-  Databricks [icon: databricks, label: "Databricks\nTransform"]
-  S3 Processed [icon: aws-s3, label: "S3 Processed"]
-}
-
-// Analytics Layer
-Analytics [color: purple, label: "Analytics & BI"] {
-  Snowflake [icon: snowflake, shape: cylinder, label: "Snowflake\nData Warehouse"]
-  Tableau [icon: tableau, label: "Tableau\nDashboards"]
-}
-
-// Machine Learning
-ML [color: red, label: "ML Pipeline"] {
-  SageMaker [icon: aws-sagemaker, label: "SageMaker\nTraining"]
-  Model Registry [icon: database, shape: cylinder]
-}
-
-// Connections
-Oracle DB, REST API, CSV Files > Kafka: Stream Data
-Kafka > S3 Raw: Land Data
-
-S3 Raw > Spark: Batch Processing
-Spark > Databricks: Transform
-Databricks > S3 Processed: Clean Data
-
-S3 Processed > Snowflake: Load
-Snowflake > Tableau: Visualize
-Snowflake > SageMaker: ML Features
-SageMaker > Model Registry: Store Models
-```
-
-**Use case:** Modern data platform with streaming ingestion, batch processing, and analytics.
+**Use case:** Modern data platform with streaming ingestion, batch ETL, and analytics.
 
 ---
 
-## Example 4: Kubernetes Cluster Architecture
+## Example 4: Serverless Event-Driven Architecture
 
-```
-direction down
+```plantuml
+@startuml
+!include <awslib/AWSCommon>
+!include <awslib/Compute/Lambda>
+!include <awslib/Storage/SimpleStorageService>
+!include <awslib/Database/DynamoDB>
+!include <awslib/ApplicationIntegration/EventBridge>
+!include <awslib/ApplicationIntegration/SimpleNotificationService>
+!include <awslib/ApplicationIntegration/StepFunctions>
+!include <awslib/MachineLearning/Rekognition>
+!include <awslib/ManagementGovernance/CloudWatch>
 
-// Control Plane
-Control Plane [icon: kubernetes, color: blue, label: "Kubernetes Control Plane"] {
-  API Server [icon: k8s-service, label: "API Server"]
-  Scheduler [icon: k8s-deployment, label: "Scheduler"]
-  Controller Manager [icon: k8s-deployment, label: "Controller Manager"]
-  etcd [icon: database, shape: cylinder, label: "etcd (State)"]
-}
+left to right direction
+skinparam linetype polyline
 
-// Worker Nodes
-Worker Nodes [color: green] {
+SimpleStorageService(upload, "Upload Bucket", "")
 
-  Node 1 [icon: k8s-node, label: "Worker Node 1"] {
-    Kubelet 1 [icon: k8s-pod]
-    Pods 1 [icon: k8s-pod, label: "Application Pods"]
-  }
+EventBridge(bus, "EventBridge", "")
+StepFunctions(workflow, "Processing Workflow", "")
 
-  Node 2 [icon: k8s-node, label: "Worker Node 2"] {
-    Kubelet 2 [icon: k8s-pod]
-    Pods 2 [icon: k8s-pod, label: "Application Pods"]
-  }
+Lambda(validate, "Validate", "Python")
+Lambda(transform, "Transform", "Python")
+Lambda(enrich, "Enrich", "Python")
+Rekognition(ai, "Rekognition", "Image analysis")
 
-  Node 3 [icon: k8s-node, label: "Worker Node 3"] {
-    Kubelet 3 [icon: k8s-pod]
-    Pods 3 [icon: k8s-pod, label: "Application Pods"]
-  }
-}
+DynamoDB(catalog, "Asset Catalog", "")
+SimpleStorageService(output, "Processed Bucket", "")
+SimpleNotificationService(notify, "Notifications", "")
+CloudWatch(monitor, "CloudWatch", "Alarms")
 
-// External Components
-Ingress Controller [icon: k8s-ingress, label: "Nginx Ingress"]
-Persistent Storage [icon: k8s-persistent-volume, shape: cylinder]
-
-// Cloud Providers
-Cloud Providers [color: orange] {
-  AWS [icon: aws-cloud]
-  Azure [icon: azure-cloud]
-  GCP [icon: gcp-cloud]
-}
-
-// Connections
-API Server > etcd: Store State
-API Server > Scheduler, Controller Manager
-Scheduler > API Server: Watch Pods
-Controller Manager > API Server: Reconcile
-
-Kubelet 1, Kubelet 2, Kubelet 3 > API Server: Report Status
-API Server > Kubelet 1, Kubelet 2, Kubelet 3: Deploy Pods
-
-Ingress Controller > Pods 1, Pods 2, Pods 3: Route Traffic
-Pods 1, Pods 2, Pods 3 > Persistent Storage: Read/Write
-
-Cloud Providers > Worker Nodes: Provision Infrastructure
+upload --> bus : S3 ObjectCreated
+bus --> workflow : Trigger workflow
+workflow --> validate : 1. Validate
+workflow --> ai : 2. Analyze
+workflow --> transform : 3. Transform
+workflow --> enrich : 4. Enrich metadata
+enrich --> catalog : Store metadata
+transform --> output : Store processed
+workflow --> notify : Complete/Fail
+workflow --> monitor : Metrics
+@enduml
 ```
 
-**Use case:** Complete Kubernetes cluster showing control plane, workers, and cloud integration.
+**Use case:** Serverless media processing pipeline with Step Functions orchestration.
 
 ---
 
-## Example 5: Serverless Event-Driven Architecture
+## Example 5: C4 Container Diagram with AWS Icons
 
-```
-direction right
-colorMode bold
+**Render with:** `POST https://kroki.io/c4plantuml/svg`
 
-// Event Sources
-Sources [color: blue, label: "Event Sources"] {
-  S3 Upload [icon: aws-s3, label: "S3 Bucket"]
-  API Gateway [icon: aws-api-gateway, label: "API Gateway"]
-  Schedule [icon: clock, label: "CloudWatch Events"]
-  DynamoDB Stream [icon: aws-dynamodb, label: "DynamoDB Stream"]
+```plantuml
+@startuml
+!include <C4/C4_Container>
+!include <awslib/AWSCommon>
+!include <awslib/Compute/Lambda>
+!include <awslib/Database/DynamoDB>
+!include <awslib/Database/Aurora>
+!include <awslib/ApplicationIntegration/APIGateway>
+!include <awslib/ApplicationIntegration/SimpleQueueService>
+!include <awslib/Storage/SimpleStorageService>
+!include <awslib/NetworkingContentDelivery/CloudFront>
+
+LAYOUT_WITH_LEGEND()
+
+Person(customer, "Customer", "Places orders via web app")
+Person(admin, "Admin", "Manages products and orders")
+
+System_Boundary(sys, "E-Commerce Platform") {
+  Container(spa, "SPA", "React 18", "Single page application", $sprite="CloudFront")
+  Container(api, "API Gateway", "AWS API Gateway", "REST entry point", $sprite="APIGateway")
+  Container(orderSvc, "Order Service", "Node.js 20", "Processes orders", $sprite="Lambda")
+  Container(productSvc, "Product Service", "Python 3.12", "Product catalog", $sprite="Lambda")
+  ContainerDb(orderDb, "Orders DB", "DynamoDB", "Order storage", $sprite="DynamoDB")
+  ContainerDb(productDb, "Product DB", "Aurora PostgreSQL", "Product catalog", $sprite="Aurora")
+  ContainerQueue(queue, "Order Queue", "SQS FIFO", "Async processing", $sprite="SimpleQueueService")
+  Container(assets, "Static Assets", "S3", "Images and files", $sprite="SimpleStorageService")
 }
 
-// Event Bus
-Event Bus [icon: aws-eventbridge, shape: queue, label: "EventBridge"]
+System_Ext(payment, "Payment Gateway", "Stripe API")
+System_Ext(email, "Email Service", "SendGrid")
 
-// Lambda Functions
-Functions [color: green, label: "Lambda Functions"] {
-  Image Processor [icon: aws-lambda, label: "Image\nProcessor"]
-  Data Validator [icon: aws-lambda, label: "Data\nValidator"]
-  Report Generator [icon: aws-lambda, label: "Report\nGenerator"]
-  Email Sender [icon: aws-lambda, label: "Email\nSender"]
-}
-
-// Storage & Databases
-Storage [color: orange] {
-  Images [icon: aws-s3, label: "Processed\nImages"]
-  Database [icon: aws-dynamodb, shape: cylinder, label: "DynamoDB"]
-  Archive [icon: aws-glacier, shape: cylinder, label: "Glacier\nArchive"]
-}
-
-// Notification
-Notification [icon: aws-sns, label: "SNS Topic"]
-
-// Connections
-S3 Upload > Event Bus: File Uploaded
-API Gateway > Event Bus: API Request
-Schedule > Event Bus: Scheduled Event
-DynamoDB Stream > Event Bus: Data Changed
-
-Event Bus > Image Processor: Process Image
-Event Bus > Data Validator: Validate Data
-Event Bus > Report Generator: Generate Report
-
-Image Processor > Images: Save
-Data Validator > Database: Store
-Report Generator > Archive: Archive Report
-
-Image Processor, Data Validator, Report Generator > Notification: Success
-Notification > Email Sender: Send Email
+Rel(customer, spa, "Uses", "HTTPS")
+Rel(admin, spa, "Manages", "HTTPS")
+Rel(spa, api, "API calls", "JSON/HTTPS")
+Rel(spa, assets, "Loads", "HTTPS")
+Rel(api, orderSvc, "Routes", "AWS Integration")
+Rel(api, productSvc, "Routes", "AWS Integration")
+Rel(orderSvc, orderDb, "Reads/Writes", "AWS SDK")
+Rel(productSvc, productDb, "Reads/Writes", "SQL")
+Rel(orderSvc, queue, "Publishes", "AWS SDK")
+Rel_R(orderSvc, payment, "Charges", "HTTPS")
+Rel(queue, email, "Triggers", "HTTPS")
+@enduml
 ```
 
-**Use case:** Fully serverless architecture with event-driven processing.
+**Use case:** C4 container diagram showing e-commerce platform with AWS infrastructure icons.
 
 ---
 
-## Example 6: Multi-Region High Availability
+## Example 6: C4 System Context Diagram
 
-```
-direction down
+**Render with:** `POST https://kroki.io/c4plantuml/svg`
 
-// Global Load Balancer
-Global LB [icon: aws-route-53, label: "Route 53\nGeoDNS"]
+```plantuml
+@startuml
+!include <C4/C4_Context>
 
-// Primary Region
-Region US East [icon: aws-region, color: green, label: "us-east-1 (Primary)"] {
-  VPC East [icon: aws-vpc] {
-    ALB East [icon: aws-elb]
-    Servers East [icon: aws-ec2, label: "EC2 Auto Scaling"]
-    RDS East [icon: aws-rds, label: "RDS Primary"]
-  }
-  S3 East [icon: aws-s3, label: "S3 Bucket"]
-}
+Person(customer, "Customer", "A user of the platform")
+Person(support, "Support Agent", "Handles customer issues")
 
-// Secondary Region
-Region US West [icon: aws-region, color: orange, label: "us-west-2 (DR)"] {
-  VPC West [icon: aws-vpc] {
-    ALB West [icon: aws-elb]
-    Servers West [icon: aws-ec2, label: "EC2 Auto Scaling"]
-    RDS West [icon: aws-rds, label: "RDS Read Replica"]
-  }
-  S3 West [icon: aws-s3, label: "S3 Bucket (Replica)"]
-}
+System(platform, "SaaS Platform", "Core product")
+System_Ext(auth, "Auth0", "Identity provider")
+System_Ext(stripe, "Stripe", "Payment processing")
+System_Ext(sendgrid, "SendGrid", "Transactional email")
+System_Ext(datadog, "Datadog", "Observability")
 
-// Connections
-Global LB > ALB East, ALB West: Route Traffic
-ALB East > Servers East
-ALB West > Servers West
-Servers East > RDS East
-Servers West > RDS West
-Servers East, Servers West > S3 East, S3 West
+Rel(customer, platform, "Uses", "HTTPS")
+Rel(support, platform, "Manages", "HTTPS")
+Rel(platform, auth, "Authenticates via", "OAuth 2.0")
+Rel(platform, stripe, "Processes payments", "HTTPS")
+Rel(platform, sendgrid, "Sends email", "SMTP/API")
+Rel(platform, datadog, "Sends telemetry", "Agent/API")
 
-RDS East > RDS West: Cross-Region Replication
-S3 East > S3 West: Cross-Region Replication
+LAYOUT_WITH_LEGEND()
+@enduml
 ```
 
-**Use case:** Active-passive multi-region setup with disaster recovery.
+**Use case:** High-level system context showing external integrations.
 
 ---
 
-## Example 7: CI/CD Pipeline
+## Example 7: Multi-Region High Availability
 
+```plantuml
+@startuml
+!include <awslib/AWSCommon>
+!include <awslib/Compute/EC2>
+!include <awslib/Database/Aurora>
+!include <awslib/NetworkingContentDelivery/CloudFront>
+!include <awslib/NetworkingContentDelivery/ElasticLoadBalancing>
+!include <awslib/NetworkingContentDelivery/Route53>
+!include <awslib/Storage/SimpleStorageService>
+!include <awslib/General/Users>
+!include <awslib/GroupIcons/all>
+
+top to bottom direction
+skinparam linetype polyline
+
+Users(users, "End Users", "")
+Route53(dns, "Route 53", "GeoDNS")
+
+AWSCloudGroup(cloud, "AWS") {
+  RegionGroup(east, "us-east-1 (Primary)") {
+    VPCGroup(vpcE, "VPC") {
+      ElasticLoadBalancing(albE, "ALB", "")
+      EC2(webE, "Web Servers", "Auto Scaling")
+      Aurora(dbE, "Aurora Primary", "Writer")
+    }
+    SimpleStorageService(s3E, "S3 Bucket", "")
+  }
+
+  RegionGroup(west, "us-west-2 (DR)") {
+    VPCGroup(vpcW, "VPC") {
+      ElasticLoadBalancing(albW, "ALB", "")
+      EC2(webW, "Web Servers", "Auto Scaling")
+      Aurora(dbW, "Aurora Replica", "Reader")
+    }
+    SimpleStorageService(s3W, "S3 Replica", "")
+  }
+}
+
+users --> dns
+dns --> albE : Primary traffic
+dns --> albW : Failover traffic
+albE --> webE
+albW --> webW
+webE --> dbE
+webW --> dbW
+dbE --> dbW : Cross-region replication
+s3E --> s3W : Cross-region replication
+@enduml
 ```
-direction right
 
-// Source Control
-Source [icon: github, label: "GitHub\nRepository"]
+**Use case:** Active-passive multi-region with Aurora cross-region replication.
 
-// CI/CD Pipeline
-Pipeline [color: blue, label: "CI/CD Pipeline"] {
-  Build [icon: jenkins, label: "Jenkins\nBuild"]
-  Test [icon: pytest, label: "Automated\nTests"]
-  Security Scan [icon: security, label: "Security\nScan"]
-  Package [icon: docker, label: "Docker\nBuild"]
+---
+
+## Example 8: Azure Microservices
+
+```plantuml
+@startuml
+!include <azure/AzureCommon>
+!include <azure/Compute/AzureFunction>
+!include <azure/Compute/AzureKubernetesService>
+!include <azure/Databases/AzureCosmosDb>
+!include <azure/Databases/AzureCacheForRedis>
+!include <azure/Analytics/AzureEventHub>
+!include <azure/Integration/AzureServiceBus>
+!include <azure/Integration/AzureAPIManagement>
+!include <azure/DevOps/AzureApplicationInsights>
+!include <azure/Identity/AzureActiveDirectory>
+!include <azure/Storage/AzureBlobStorage>
+
+left to right direction
+
+actor "User" as user
+
+AzureActiveDirectory(aad, "Azure AD", "", "Auth")
+AzureAPIManagement(apim, "API Management", "", "Gateway")
+
+package "Microservices (AKS)" {
+  AzureKubernetesService(aks, "AKS Cluster", "1.28", "")
+  AzureFunction(orderFn, "Order Function", "C#", "")
+  AzureFunction(notifyFn, "Notify Function", "C#", "")
 }
 
-// Artifact Storage
-Registry [icon: docker, shape: cylinder, label: "Container\nRegistry"]
+AzureCosmosDb(cosmos, "Cosmos DB", "SQL API", "Multi-region")
+AzureCacheForRedis(redis, "Redis", "Premium", "Session cache")
+AzureServiceBus(bus, "Service Bus", "Premium", "Messaging")
+AzureEventHub(hub, "Event Hub", "Standard", "Telemetry")
+AzureBlobStorage(blob, "Blob Storage", "Hot", "Documents")
+AzureApplicationInsights(ai, "App Insights", "", "APM")
 
-// Deployment Stages
-Environments [color: green, label: "Deployment Stages"] {
-  Dev [icon: kubernetes, label: "Dev\nCluster"]
-  Staging [icon: kubernetes, label: "Staging\nCluster"]
-  Production [icon: kubernetes, label: "Production\nCluster"]
-}
-
-// Monitoring
-Monitoring [color: orange] {
-  Logs [icon: elasticsearch, label: "ELK Stack"]
-  Metrics [icon: prometheus, label: "Prometheus"]
-  Alerts [icon: grafana, label: "Grafana"]
-}
-
-// Connections
-Source > Build: Webhook
-Build > Test: Compile
-Test > Security Scan: Pass
-Security Scan > Package: Pass
-Package > Registry: Push Image
-
-Registry > Dev: Auto Deploy
-Dev > Staging: Manual Approve
-Staging > Production: Manual Approve
-
-Dev, Staging, Production > Logs: Send Logs
-Dev, Staging, Production > Metrics: Send Metrics
-Metrics > Alerts: Alert Rules
+user --> aad : Authenticate
+aad --> apim
+apim --> aks : Route requests
+aks --> cosmos : CRUD operations
+aks --> redis : Cache lookups
+aks --> bus : Publish events
+bus --> orderFn : Process orders
+bus --> notifyFn : Send notifications
+aks --> hub : Emit telemetry
+hub --> ai : Analyze
+aks --> blob : Store documents
+@enduml
 ```
 
-**Use case:** Complete CI/CD pipeline with automated testing and progressive deployment.
+**Use case:** Azure microservices with AKS, managed services, and event-driven processing.
+
+---
+
+## Example 9: CI/CD Pipeline
+
+```plantuml
+@startuml
+!include <awslib/AWSCommon>
+!include <awslib/DeveloperTools/CodeBuild>
+!include <awslib/DeveloperTools/CodePipeline>
+!include <awslib/Containers/ECR>
+!include <awslib/Containers/EKS>
+!include <awslib/ManagementGovernance/CloudWatch>
+!include <awslib/SecurityIdentityCompliance/Inspector>
+
+left to right direction
+skinparam linetype polyline
+
+rectangle "GitHub" as gh #333333
+
+package "CI/CD Pipeline" {
+  CodePipeline(pipeline, "CodePipeline", "")
+  CodeBuild(build, "Build & Test", "")
+  Inspector(scan, "Security Scan", "")
+  CodeBuild(package, "Docker Build", "")
+  ECR(registry, "Container Registry", "")
+}
+
+package "Deployment" {
+  EKS(dev, "Dev Cluster", "")
+  EKS(staging, "Staging", "")
+  EKS(prod, "Production", "")
+}
+
+CloudWatch(monitor, "CloudWatch", "Alerts")
+
+gh --> pipeline : Webhook
+pipeline --> build : Compile + test
+build --> scan : Pass
+scan --> package : Pass
+package --> registry : Push image
+registry --> dev : Auto deploy
+dev --> staging : Manual approve
+staging --> prod : Manual approve
+dev --> monitor : Send metrics
+staging --> monitor : Send metrics
+prod --> monitor : Send metrics
+@enduml
+```
+
+**Use case:** AWS CI/CD pipeline with progressive deployment and security scanning.
+
+---
+
+## Example 10: C4 Deployment Diagram
+
+**Render with:** `POST https://kroki.io/c4plantuml/svg`
+
+```plantuml
+@startuml
+!include <C4/C4_Deployment>
+
+Deployment_Node(aws, "AWS", "us-east-1") {
+  Deployment_Node(vpc, "VPC", "10.0.0.0/16") {
+    Deployment_Node(ecs, "ECS Cluster", "Fargate") {
+      Container(api, "API Service", "Go 1.22", "REST API")
+      Container(worker, "Worker", "Python 3.12", "Background jobs")
+    }
+    Deployment_Node(rds, "RDS", "Multi-AZ") {
+      ContainerDb(db, "PostgreSQL", "15.4", "Primary database")
+    }
+    Deployment_Node(elasticache, "ElastiCache", "Cluster mode") {
+      ContainerDb(cache, "Redis", "7.0", "Session + cache")
+    }
+  }
+  Deployment_Node(s3node, "S3", "Standard") {
+    Container(storage, "Object Store", "S3", "File storage")
+  }
+}
+
+Deployment_Node(cloudflare, "Cloudflare", "Edge") {
+  Container(cdn, "CDN + WAF", "Cloudflare", "Caching, DDoS protection")
+}
+
+Deployment_Node(client, "Client", "Browser") {
+  Container(spa, "Web App", "React 18", "Frontend SPA")
+}
+
+Rel(spa, cdn, "HTTPS")
+Rel(cdn, api, "HTTPS")
+Rel(api, db, "TCP/5432")
+Rel(api, cache, "TCP/6379")
+Rel(api, storage, "AWS SDK")
+Rel(worker, db, "TCP/5432")
+Rel(worker, cache, "TCP/6379")
+@enduml
+```
+
+**Use case:** Deployment diagram showing infrastructure topology with protocols and ports.
 
 ---
 
 ## Tips for Creating Effective Diagrams
 
-### 1. Start Simple
-Begin with major components, then add detail:
-```
-// Start with this
-Frontend > Backend > Database
+### 1. Start Simple, Then Expand
 
-// Then expand
-Frontend [icon: react]
-Backend [icon: nodejs]
-Database [icon: postgres]
+```plantuml
+' Start with this
+Frontend --> Backend --> Database
 
-// Finally add details
-Frontend [icon: react, label: "React SPA\nv18.2"]
-Backend [icon: nodejs, label: "Express API\nPort 3000"]
-Database [icon: postgres, shape: cylinder, label: "PostgreSQL 15"]
+' Then add icons and details
+!include <awslib/AWSCommon>
+!include <awslib/Compute/Lambda>
+!include <awslib/Database/Aurora>
+Lambda(backend, "API", "Node.js 20")
+Aurora(db, "Users DB", "PostgreSQL 15")
 ```
 
-### 2. Use Consistent Colors
-Color code by tier, environment, or responsibility:
-```
-colorMode bold
+### 2. Use Consistent Color Themes
 
-// By tier
-Web Tier [color: green] { ... }
-App Tier [color: blue] { ... }
-Data Tier [color: red] { ... }
+Let the cloud icon libraries handle coloring — AWS categories already have distinct colors. Avoid overriding with custom colors unless distinguishing environments.
 
-// By environment
-Dev [color: yellow] { ... }
-Staging [color: orange] { ... }
-Prod [color: red] { ... }
+### 3. Label Connections with Protocol + Data
+
+```plantuml
+client --> api : "HTTPS/JSON"
+api --> db : "SQL over TLS"
+api --> queue : "SQS SendMessage (JSON)"
+worker --> s3 : "PutObject (multipart)"
 ```
 
-### 3. Add Meaningful Labels
-Include versions, ports, instance counts:
-```
-API [icon: nodejs, label: "Express API\nv4.18\nPort: 8080"]
-Database [icon: postgres, label: "PostgreSQL 15\n(3 replicas)"]
-Cache [icon: redis, label: "Redis 7\n16GB RAM"]
-```
+### 4. Group by Logical Boundaries
 
-### 4. Show Data Transformations
-Label connections with what flows:
-```
-Client > API: HTTP POST /orders
-API > Queue: OrderCreated Event (JSON)
-Queue > Worker: Message (Protobuf)
-Worker > Database: INSERT order (SQL)
-```
-
-### 5. Group Logically
-Use groups to show boundaries:
-```
-AWS Account [icon: aws-account] {
-  Production VPC [icon: aws-vpc] {
-    Public Subnet { ... }
-    Private Subnet { ... }
-  }
-
-  DR VPC [icon: aws-vpc] {
-    ...
+```plantuml
+AWSCloudGroup(cloud) {
+  VPCGroup(vpc, "Production VPC") {
+    PrivateSubnetGroup(priv, "Private") {
+      ' services here
+    }
   }
 }
 ```
 
-## Common Patterns
+### 5. Use C4 for Formal Architecture Docs
 
-### Load Balancer + Auto Scaling
-```
-LoadBalancer [icon: aws-elb]
-Server1, Server2, Server3 [icon: aws-ec2]
-LoadBalancer > Server1, Server2, Server3
-```
-
-### Primary-Replica Database
-```
-Primary [icon: postgres, label: "Primary"]
-Replica1, Replica2 [icon: postgres, label: "Read Replica"]
-Primary > Replica1, Replica2: Replication
-```
-
-### Cache-Aside Pattern
-```
-App > Cache: Check Cache
-Cache --> App: Cache Miss
-App > Database: Query DB
-App > Cache: Update Cache
-```
-
-### Pub/Sub Messaging
-```
-Publisher1, Publisher2 > Topic
-Topic > Subscriber1, Subscriber2, Subscriber3
-```
+- **Level 1 (Context):** System + external actors — use `c4plantuml` endpoint
+- **Level 2 (Container):** Internal containers with tech stack — use `c4plantuml` endpoint
+- **Level 3 (Component):** Internal components within a container — use `c4plantuml` endpoint
+- **Infrastructure:** Use `plantuml` endpoint with cloud icons directly
 
 ## References
 
-- **Official Examples:** https://docs.eraser.io/docs/examples
-- **Syntax Guide:** https://docs.eraser.io/docs/syntax
-- **Icon Reference:** See icon-reference.md in this directory
+- **Kroki API:** https://kroki.io
+- **AWS Icons:** https://github.com/awslabs/aws-icons-for-plantuml
+- **Azure Icons:** https://github.com/plantuml-stdlib/Azure-PlantUML
+- **GCP Icons (stdlib `gcp`):** https://github.com/Crashedmind/PlantUML-icons-GCP
+- **C4-PlantUML:** https://github.com/plantuml-stdlib/C4-PlantUML
+- **PlantUML Hitchhiker's Guide:** https://crashedmind.github.io/PlantUMLHitchhikersGuide/

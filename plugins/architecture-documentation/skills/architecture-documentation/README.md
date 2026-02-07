@@ -25,23 +25,67 @@ Claude will:
 1. Explore the codebase structure
 2. Identify components and dependencies
 3. Trace data flow through the system
-4. Generate comprehensive documentation with diagrams
-5. Output a markdown file with Eraser diagram code embedded
+4. Generate comprehensive documentation with PlantUML diagrams
+5. Output a markdown file with cloud architecture diagrams embedded
 
 ### 2. Render Diagrams
 
 After Claude generates the documentation:
 
 ```bash
-# Navigate to the skill directory
-cd ~/.claude/skills/superpowers/architecture-documentation
+# Render all diagrams via Kroki API (free, no API key needed)
+./render-kroki-diagrams.js path/to/Architecture.md --format svg
 
-# Render diagrams (requires Eraser API key)
-./render-eraser-diagrams.js path/to/Architecture.md --format svg --replace
+# Replace diagram code blocks with image references
+./render-kroki-diagrams.js path/to/Architecture.md --format svg --replace
 
-# Or just extract diagram code without rendering
-./render-eraser-diagrams.js path/to/Architecture.md
+# Use self-hosted Kroki instance
+./render-kroki-diagrams.js path/to/Architecture.md --base-url http://localhost:8000
 ```
+
+Or render a single diagram manually:
+
+```bash
+curl -X POST https://kroki.io/plantuml/svg \
+  -H "Content-Type: text/plain" \
+  -d '@startuml
+!include <awslib/AWSCommon>
+!include <awslib/Compute/Lambda>
+!include <awslib/Storage/SimpleStorageService>
+Lambda(myLambda, "Handler", "Process events")
+SimpleStorageService(myS3, "Data Bucket", "Store files")
+myLambda --> myS3
+@enduml' -o diagram.svg
+```
+
+## Diagram Engine: Kroki.io
+
+This skill uses **Kroki.io** — a unified REST API that wraps 25+ diagram engines (PlantUML, D2, Mermaid, etc.) behind a single endpoint.
+
+- **API:** Simple POST with plain text, returns SVG/PNG
+- **Cloud Icons:** Full AWS/Azure/GCP via PlantUML stdlib
+- **Free:** ~100 requests/minute on public instance; self-host via Docker for unlimited
+- **Output:** SVG, PNG, JPEG, PDF
+
+### Self-Hosting Kroki
+
+```bash
+# Quick start (PlantUML, GraphViz, D2, etc.)
+docker run -p8000:8000 yuzutech/kroki
+
+# Full stack with Mermaid support
+docker compose up -d   # using docker-compose.yml from kroki-syntax.md
+```
+
+### Kroki Endpoints
+
+| Diagram Type | Endpoint |
+|-------------|----------|
+| PlantUML with cloud icons | `POST /plantuml/svg` |
+| C4 model diagrams | `POST /c4plantuml/svg` |
+| Mermaid | `POST /mermaid/svg` |
+| D2 | `POST /d2/svg` |
+| GraphViz | `POST /graphviz/svg` |
 
 ## Documentation Template
 
@@ -50,14 +94,14 @@ The generated documentation follows this structure:
 ```
 1. Context & Scope
    - Business goals
-   - System context diagram
+   - System context diagram (PlantUML)
 
 2. Architecture Constraints & Principles
    - Why this approach?
    - Immutable rules
 
 3. High-Level Architecture
-   - Container diagram
+   - Container diagram (C4 model or cloud icons)
    - Data flow walkthrough with transformations
 
 4. Component Deep Dives (for each component)
@@ -75,131 +119,103 @@ The generated documentation follows this structure:
    - Major decisions with context and consequences
 ```
 
-## Eraser Diagram Syntax
+## PlantUML Diagram Syntax
 
-Claude generates diagrams using Eraser's diagram-as-code syntax:
+Claude generates diagrams using PlantUML with cloud icon macros:
 
+```plantuml
+@startuml
+!include <awslib/AWSCommon>
+!include <awslib/Compute/Lambda>
+!include <awslib/Database/Aurora>
+!include <awslib/ApplicationIntegration/APIGateway>
+!include <awslib/General/Users>
+
+left to right direction
+
+Users(users, "Customers", "")
+APIGateway(api, "REST API", "v2")
+Lambda(func, "Order Service", "Node.js 20")
+Aurora(db, "Orders DB", "PostgreSQL 15")
+
+users --> api : HTTPS/JSON
+api --> func : AWS Integration
+func --> db : SQL Queries
+@enduml
 ```
-// System Context Example
-Users [icon: users]
-API [icon: server]
-Database [icon: database]
 
-Users > API: HTTPS
-API > Database: SQL
+### C4 Model Diagrams
 
-// Container Diagram
-Frontend [icon: react] {
-  label: "React SPA"
+```plantuml
+@startuml
+!include <C4/C4_Container>
+
+Person(user, "User", "End user")
+System_Boundary(sys, "My System") {
+  Container(app, "App", "React", "Frontend SPA")
+  ContainerDb(db, "Database", "PostgreSQL", "User data")
 }
-Backend [icon: nodejs] {
-  label: "FastAPI"
-}
+System_Ext(external, "External System", "Third-party API")
 
-Frontend > Backend: REST API
+Rel(user, app, "Uses", "HTTPS")
+Rel(app, db, "Reads/Writes", "SQL")
+Rel(app, external, "Calls", "REST")
 
-// Sequence Diagram
-User > Frontend: Click button
-Frontend > Backend: POST /api/data
-Backend > Database: INSERT
-Database > Backend: Success
-Backend > Frontend: 200 OK
-Frontend > User: Show success
+LAYOUT_WITH_LEGEND()
+@enduml
 ```
 
-## Eraser API Script
-
-### Installation
-
-```bash
-# Install Node.js if not already installed
-# Script requires Node.js 12+
-
-# Set your Eraser API key
-export ERASER_API_KEY="your-api-key-here"
-```
-
-### Usage
-
-```bash
-# Render all diagrams in a markdown file
-./render-eraser-diagrams.js Architecture.md
-
-# Specify output directory and format
-./render-eraser-diagrams.js Architecture.md --output-dir ./images --format svg
-
-# Replace diagram code blocks with image references
-./render-eraser-diagrams.js Architecture.md --replace
-
-# Full example
-./render-eraser-diagrams.js Architecture.md \
-  --output-dir ./diagrams \
-  --format svg \
-  --replace \
-  --api-key "your-key"
-```
-
-### Options
+## Render Script Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--output-dir <dir>` | Output directory for diagrams | `./diagrams` |
 | `--format <format>` | Output format: `svg` or `png` | `svg` |
 | `--replace` | Replace code blocks with image refs | `false` |
-| `--api-key <key>` | Eraser API key (or use env var) | `ERASER_API_KEY` |
+| `--base-url <url>` | Kroki instance URL | `https://kroki.io` |
 
-### Without API Key
-
-If you don't have an Eraser API key, the script will extract diagram code to `.eraser` files:
-
-```bash
-./render-eraser-diagrams.js Architecture.md
-# Creates: diagrams/system-context.eraser, diagrams/data-flow.eraser, etc.
-```
-
-You can then:
-1. Visit https://app.eraser.io
-2. Create a new diagram
-3. Paste the `.eraser` file content
-4. Export as image
+The script auto-detects C4 diagrams (by checking for `!include <C4/...>`) and routes them to the correct `/c4plantuml/` endpoint.
 
 ## Reference Materials
 
-This skill includes comprehensive reference materials to help Claude generate accurate documentation:
-
 ### 1. **example-output.pdf**
-Gold standard example showing the expected documentation quality and structure. Based on a real AI Support Agents architecture.
+Gold standard example showing the expected documentation quality and structure.
 
-### 2. **eraser-syntax.md**
-Complete syntax reference for Eraser diagrams including:
-- Node and group definitions
-- All available properties (icon, color, label, shape, etc.)
-- Connection types and labels
-- Layout direction controls
-- Common patterns and troubleshooting
+### 2. **kroki-syntax.md**
+Complete syntax reference including:
+- Kroki API usage (POST/GET, encoding, rate limits, self-hosting)
+- PlantUML architecture diagram syntax (nodes, groups, connections, styling)
+- Cloud icon include paths (AWS, Azure, GCP, K8s — all via PlantUML stdlib)
+- C4 model macros (Person, System, Container, Component, Deployment)
+- Layout control, skinparam, tips and troubleshooting
 
 ### 3. **icon-reference.md**
-Comprehensive icon catalog with 1600+ icons:
-- 700+ AWS icons (EC2, Lambda, RDS, S3, etc.)
-- 500+ GCP icons (Compute Engine, BigQuery, Pub/Sub, etc.)
-- 400+ Azure icons (Virtual Machines, Cosmos DB, AKS, etc.)
-- Kubernetes icons (Pod, Service, Deployment, etc.)
-- Popular tech logos (Docker, React, Python, Postgres, etc.)
-- General purpose icons (users, servers, databases, etc.)
+Comprehensive cloud icon catalog:
+- 900+ AWS icons with exact macro signatures (Lambda, EC2, S3, Aurora, etc.)
+- 400+ Azure icons (AzureFunction, AzureCosmosDb, AzureKubernetesService, etc.)
+- GCP icons (Cloud_Functions, CloudRun, BigQuery, CloudSQL, etc.)
+- Kubernetes icons (KubernetesPod, KubernetesSvc, KubernetesDeploy, etc.)
+- General-purpose icons (tupadr3 Font Awesome, DevIcons, Material Design)
 
 ### 4. **diagram-examples.md**
-Real-world diagram examples with complete code:
+10 real-world diagram examples with complete PlantUML code:
 - AWS three-tier web application
-- Microservices architecture
+- Microservices with event-driven architecture
 - Data ETL pipeline
-- Kubernetes cluster
 - Serverless event-driven architecture
+- C4 container diagram with AWS icons
+- C4 system context diagram
 - Multi-region high availability
+- Azure microservices
 - CI/CD pipeline
+- C4 deployment diagram
 
-Claude references these materials when generating documentation to ensure accuracy.
+## Key Features
 
-Key features:
+- **Cloud-native diagrams:** AWS/Azure/GCP icons rendered as proper architecture diagrams
+- **C4 model support:** System context, container, component, and deployment diagrams
+- **Free rendering:** No API key needed — Kroki.io public instance handles ~100 req/min
+- **Self-hostable:** Docker one-liner for unlimited rendering
 - **Detailed transformations:** Shows exact input → output at each stage
 - **Library rationale:** Documents WHY each dependency was chosen
 - **Configuration explanations:** Explains WHY specific values are set
@@ -207,23 +223,7 @@ Key features:
 - **Failure handling:** Documents edge cases, retries, fallbacks
 - **Concrete examples:** Real payloads, actual code snippets
 
-## Customization
-
-### Modifying the Template
-
-Edit `SKILL.md` to adjust the documentation structure. The skill follows the template structure exactly.
-
-### Adding Diagram Types
-
-Eraser supports multiple diagram types:
-- **Architecture diagrams:** System context, container, component
-- **Sequence diagrams:** Request/response flows
-- **Entity relationship:** Database schemas
-- **Cloud architecture:** AWS/Azure/GCP resources
-
-Refer to Eraser documentation for complete syntax: https://docs.eraser.io
-
-### Adapting for Other Projects
+## Adapting for Other Projects
 
 This skill is codebase-agnostic and works with:
 - **Backend services:** Node.js, Python, Go, Java, etc.
@@ -239,62 +239,8 @@ The skill infers structure from common patterns (package.json, requirements.txt,
 1. **Provide context:** Include README, business requirements, or design docs in the codebase
 2. **Point to entry points:** Mention main files (e.g., "main.py is the entry point")
 3. **Highlight complexity:** Tell Claude which components are most complex
-4. **Request specific focus:** "Focus on the authentication flow" or "Deep dive on the data processing pipeline"
+4. **Request specific focus:** "Focus on the authentication flow" or "Deep dive on the data pipeline"
 5. **Iterate:** Review generated docs and ask Claude to expand specific sections
-
-## Troubleshooting
-
-### "No Eraser diagrams found"
-
-The markdown file doesn't contain diagram code blocks. Make sure Claude generated the documentation with diagrams.
-
-### "API request failed"
-
-- Check your Eraser API key is valid
-- Verify you have internet connectivity
-- Ensure you haven't exceeded API rate limits
-
-### "Diagram code is invalid"
-
-- The generated diagram syntax may have errors
-- Review the Eraser syntax documentation
-- Ask Claude to regenerate the diagram
-
-### Script won't run
-
-```bash
-# Make sure the script is executable
-chmod +x render-eraser-diagrams.js
-
-# Verify Node.js is installed
-node --version  # Should be 12+
-```
-
-## API Key Setup
-
-### Getting an Eraser API Key
-
-1. Visit https://eraser.io
-2. Sign up or log in
-3. Go to Settings → API Keys
-4. Create a new API key
-5. Copy the key
-
-### Setting the API Key
-
-**Option 1: Environment Variable (Recommended)**
-```bash
-# Add to ~/.bashrc or ~/.zshrc
-export ERASER_API_KEY="your-api-key-here"
-
-# Or set for current session only
-export ERASER_API_KEY="your-api-key-here"
-```
-
-**Option 2: Command Line Flag**
-```bash
-./render-eraser-diagrams.js Architecture.md --api-key "your-api-key-here"
-```
 
 ## Architecture Decision
 
@@ -306,16 +252,3 @@ This skill prioritizes **depth for engineers** because:
 4. **Maintenance:** Future modifications require understanding the "why" behind decisions
 
 High-level summaries can be generated from detailed docs, but the reverse is not possible.
-
-## License
-
-This skill is part of the Superpowers skill collection.
-
-## Contributing
-
-To improve this skill:
-1. Test with various codebases
-2. Identify missing or unclear sections
-3. Refine the template structure
-4. Add examples and anti-patterns
-5. Submit improvements to the Superpowers repository
