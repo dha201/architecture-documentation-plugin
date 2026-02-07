@@ -7,12 +7,16 @@ description: Use when architecture documentation needs to be delivered as a Word
 
 Converts architecture markdown with diagram code blocks into a polished Word document. Diagrams render via Kroki API and embed as PNG images. Supports any Kroki-supported diagram type (PlantUML, C4, Mermaid, D2, Graphviz, etc.).
 
+**Requires network access** to reach `kroki.io` (or a local Kroki instance) for diagram rendering. Documents without diagrams render fully offline.
+
+All paths below use `$SKILL_DIR` as shorthand for this skill's directory (the directory containing this SKILL.md file). Resolve it once from the path used to read this file, then substitute the absolute path directly into each command — shell variables do not persist between tool calls.
+
 ## Workflow
 
 Copy this checklist and track progress:
 
 ```
-- [ ] Step 1: Verify dependencies installed
+- [ ] Step 1: Verify dependencies
 - [ ] Step 2: Run the render script
 - [ ] Step 3: Verify output
 - [ ] Step 4: Deliver to user
@@ -21,7 +25,7 @@ Copy this checklist and track progress:
 **Step 1: Verify dependencies**
 
 ```bash
-pip install -r scripts/requirements.txt
+pip install -r "$SKILL_DIR/scripts/requirements.txt"
 ```
 
 Requires: `python-docx>=1.1.0`, `requests>=2.31.0`, `mistune>=3.0.0`, `Pillow>=10.0.0`
@@ -29,7 +33,7 @@ Requires: `python-docx>=1.1.0`, `requests>=2.31.0`, `mistune>=3.0.0`, `Pillow>=1
 **Step 2: Run the render script**
 
 ```bash
-python scripts/render-docx.py <input.md> [-o output.docx]
+python3 "$SKILL_DIR/scripts/render-docx.py" <input.md> [-o output.docx]
 ```
 
 | Option | Description | Default |
@@ -41,23 +45,55 @@ python scripts/render-docx.py <input.md> [-o output.docx]
 
 **Step 3: Verify output**
 
-Open the generated DOCX and check:
-- Diagrams rendered as images (not raw code)
-- Tables have blue header rows (not plain text)
-- Headings appear in navigation pane
-- Right-click TOC → Update Field → Update Entire Table
+Run this programmatic check on the generated DOCX:
+
+```bash
+python3 -c "
+from docx import Document
+import sys
+d = Document(sys.argv[1])
+imgs = len(d.inline_shapes)
+tables = len(d.tables)
+headings = len([p for p in d.paragraphs if p.style.name.startswith('Heading')])
+print(f'Headings: {headings}, Tables: {tables}, Images: {imgs}, Size: {len(d.paragraphs)} paragraphs')
+" <output.docx>
+```
+
+Check: images > 0 (if source had diagrams), tables > 0 (if source had tables), headings > 0. Report any zeros to the user as a potential issue. Remind user to right-click TOC and select Update Field in Word.
 
 **Step 4: Deliver**
 
-Report the output path and file size to the user. Note that TOC requires manual update in Word.
+Report the output path, file size, and verification counts to the user.
 
 ## Error Recovery
 
-If the script fails:
+**Kroki render error (400/422):** The failing diagram type and error are printed. Check the diagram syntax. C4 diagrams must have `!include <C4/...>` or use the `c4plantuml` fence tag — otherwise they route to the wrong Kroki endpoint. Note: Kroki bundles specific renderer versions — bleeding-edge syntax may not be supported.
 
-1. **Kroki render error** — The failing diagram type and error are printed. Check the diagram syntax. C4 diagrams must have `!include <C4/...>` or use the `c4plantuml` fence tag — otherwise they route to the wrong Kroki endpoint.
-2. **Network error** — Kroki.io may be rate-limited. Self-host: `docker run -p8000:8000 yuzutech/kroki` and pass `--kroki-url http://localhost:8000`.
-3. **Missing tables in output** — The script enables mistune's table plugin automatically. If tables still appear as text, the markdown pipe table syntax may be malformed (check alignment row `|---|---|`).
+**Connection error (cannot reach kroki.io):** Either the network is down, blocked, or the service is unavailable. Self-host Kroki locally. For documents with Mermaid diagrams, a single container is not enough — use docker-compose:
+
+```yaml
+# docker-compose.yml
+services:
+  kroki:
+    image: yuzutech/kroki
+    ports: ["8000:8000"]
+    environment:
+      KROKI_MERMAID_HOST: mermaid
+  mermaid:
+    image: yuzutech/kroki-mermaid
+    expose: ["8002"]
+```
+
+```bash
+docker-compose up -d
+python3 "$SKILL_DIR/scripts/render-docx.py" doc.md --kroki-url http://localhost:8000
+```
+
+For PlantUML-only documents, `docker run -p8000:8000 yuzutech/kroki` suffices.
+
+**Rate limited (429/503):** Same self-hosting fix as above.
+
+**Missing tables in output:** The script enables mistune's table plugin automatically. If tables still appear as plain text: (1) verify markdown has the alignment row `|---|---|`, (2) verify mistune version: `pip show mistune` should show `>=3.0.0`.
 
 ## Key Behaviors
 
@@ -87,4 +123,4 @@ If the script fails:
 | C4 diagram renders incorrectly | Ensure `!include <C4/...>` is present or tag as `c4plantuml` |
 | Images too wide/small | Adjust `--image-width` (default 6.0 inches) |
 | TOC is empty in Word | Right-click TOC → Update Field → Update Entire Table |
-| Kroki rate limited | Self-host with Docker and use `--kroki-url` |
+| Mermaid fails on local Kroki | Need `kroki-mermaid` companion container (see Error Recovery) |
