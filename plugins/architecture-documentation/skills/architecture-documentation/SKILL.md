@@ -30,7 +30,7 @@ Architecture Documentation Progress:
 - [ ] Phase 3: Data flow traced (request lifecycle, transformations)
 - [ ] Phase 4: Business context extracted (README, comments, code)
 - [ ] Phase 5: Documentation generated following structure below
-- [ ] Phase 6: Diagrams created with PlantUML syntax (rendered via Kroki)
+- [ ] Phase 6: Diagrams created (PlantUML via Kroki and/or Eraser syntax)
 - [ ] Phase 7: Engineering analysis complete (all "why" questions answered)
 - [ ] Phase 8: Quality validation passed
 ```
@@ -152,7 +152,7 @@ Follow this structure (see example-output.pdf for full reference):
    - Identify stakeholders (who uses this?)
 
 3. **System Context Diagram:**
-   - Create PlantUML diagram using C4 model or cloud icon macros (see kroki-syntax.md)
+   - Create diagram using either PlantUML/Kroki (see kroki-syntax.md) or Eraser (see eraser-syntax.md)
    - Show: system as a box, external actors (users, services, databases), connections
 
 4. **High-Level Architecture:**
@@ -186,9 +186,16 @@ Follow this structure (see example-output.pdf for full reference):
 
 ### Phase 3: Diagram Generation
 
-For each diagram, generate PlantUML code using cloud icon macros (see kroki-syntax.md and icon-reference.md):
+Two diagram engines are available. Choose based on needs:
 
-**Wrap all diagrams in PlantUML code blocks:**
+**Option A: PlantUML via Kroki (default)** — Free, self-hostable, 25+ diagram engines, cloud icons in stdlib.
+
+**Option B: Eraser** — Concise syntax, visual styling (watercolor, bold), requires API key.
+
+#### PlantUML/Kroki Diagrams
+
+Generate PlantUML code using cloud icon macros (see kroki-syntax.md and icon-reference.md):
+
 ````
 ```plantuml
 @startuml System Context
@@ -209,14 +216,42 @@ api --> db : SQL Queries
 ```
 ````
 
-**Use the correct Kroki endpoint for the diagram type:**
+**Kroki endpoints:**
 - **PlantUML with cloud icons:** `POST https://kroki.io/plantuml/svg`
 - **C4 model diagrams:** `POST https://kroki.io/c4plantuml/svg`
 
-**Reference materials for diagrams:**
-- **kroki-syntax.md** - Complete PlantUML syntax reference, Kroki API usage, C4 model macros
+#### Eraser Diagrams
+
+Generate Eraser diagram code (see eraser-syntax.md):
+
+````
+```eraser
+// System Context
+colorMode bold
+direction right
+
+Users [icon: users, label: "End Users"]
+API [icon: aws-lambda, label: "API Service"]
+Database [icon: aws-rds, label: "PostgreSQL 15"]
+
+Users > API: HTTPS/JSON
+API > Database: SQL Queries
+```
+````
+
+**Eraser rendering:** Requires `ERASER_API_KEY` env var. Use `render-eraser-diagrams.js`.
+
+#### Reference Materials
+
+**PlantUML/Kroki:**
+- **kroki-syntax.md** - PlantUML syntax, Kroki API, C4 model macros
 - **icon-reference.md** - Cloud icon catalog (AWS 900+, Azure 400+, GCP, K8s macros)
 - **diagram-examples.md** - Real-world examples with complete PlantUML code
+
+**Eraser:**
+- **eraser-syntax.md** - Eraser syntax reference (nodes, groups, connections, properties)
+- **eraser-icon-reference.md** - Eraser icon catalog (AWS 700+, GCP 500+, Azure 400+, K8s, tech logos)
+- **eraser-diagram-examples.md** - 7 real-world Eraser diagram examples with complete code
 
 ## Engineering Analysis Requirements
 
@@ -254,8 +289,8 @@ After generating documentation, validate immediately using this checklist:
 - [ ] Matrix includes all major components with all required columns (Component, Primary Responsibility, Key Dependencies, Input/Output, Failure Modes, Recovery Strategies)
 - [ ] Each component has Purpose, Implementation Details, Engineering Analysis
 - [ ] Data flow walkthrough includes Input → Output transformations
-- [ ] Diagrams use correct PlantUML syntax (verified against kroki-syntax.md)
-- [ ] All diagram code blocks wrapped in `@startuml`/`@enduml` within ```plantuml fences
+- [ ] Diagrams use correct syntax (PlantUML verified against kroki-syntax.md, or Eraser verified against eraser-syntax.md)
+- [ ] PlantUML blocks wrapped in `@startuml`/`@enduml` within ```plantuml fences; Eraser blocks in ```eraser fences
 
 ### 2. Depth Validation (Critical)
 - [ ] Every technical decision has "why" explanation (not just "what")
@@ -421,25 +456,33 @@ Prioritize technical depth in:
 
 This skill includes comprehensive reference materials:
 
+**PlantUML/Kroki:**
 - **kroki-syntax.md** - Complete PlantUML syntax reference, Kroki API usage, C4 model macros, cloud icon includes
 - **icon-reference.md** - Cloud icon catalog (AWS 900+, Azure 400+, GCP, K8s with exact macro signatures)
 - **diagram-examples.md** - 10 real-world diagram examples with complete PlantUML code
+
+**Eraser:**
+- **eraser-syntax.md** - Eraser diagram-as-code syntax, properties, connections, layout, patterns
+- **eraser-icon-reference.md** - Eraser icon catalog (AWS 700+, GCP 500+, Azure 400+, K8s, tech logos)
+- **eraser-diagram-examples.md** - 7 real-world Eraser diagram examples with tips and patterns
+
+**Shared:**
 - **example-output.pdf** - Gold standard example of expected documentation quality
 
 **When generating diagrams, reference these files to:**
-- Find correct cloud icon macros and include paths (use icon-reference.md)
+- Find correct cloud icon macros and include paths (use icon-reference.md or eraser-icon-reference.md)
 - Learn PlantUML syntax for groups, connections, C4 model, styling (use kroki-syntax.md)
-- See real-world patterns and examples (use diagram-examples.md)
+- Learn Eraser syntax for nodes, groups, connections, styling (use eraser-syntax.md)
+- See real-world patterns and examples (use diagram-examples.md or eraser-diagram-examples.md)
 
-## Kroki Diagram Integration
+## Diagram Rendering
 
-After generating documentation:
-1. Extract all PlantUML diagram code blocks (wrapped in `@startuml`/`@enduml`)
-2. Use the `render-kroki-diagrams.js` script to render via Kroki API to SVG/PNG
-3. Optionally replace code blocks with embedded images in final document
+After generating documentation, render diagrams with the appropriate script:
+
+### Kroki (PlantUML diagrams)
 
 ```bash
-# Render all diagrams from a markdown file
+# Render all PlantUML diagrams from a markdown file
 ./render-kroki-diagrams.js Architecture.md --format svg
 
 # Replace code blocks with image references
@@ -450,6 +493,21 @@ After generating documentation:
 ```
 
 The script auto-detects C4 diagrams and routes them to the `/c4plantuml/` endpoint.
+
+### Eraser (Eraser diagrams)
+
+```bash
+# Render all Eraser diagrams (requires ERASER_API_KEY env var)
+./render-eraser-diagrams.js Architecture.md --format svg
+
+# Replace code blocks with image references
+./render-eraser-diagrams.js Architecture.md --format svg --replace
+
+# Use explicit API key
+./render-eraser-diagrams.js Architecture.md --api-key YOUR_KEY
+```
+
+Without an API key, the script saves raw `.eraser` files for manual rendering.
 
 ## Optional Appendices Templates
 
@@ -516,7 +574,7 @@ Before finalizing documentation:
 - [ ] All 8 checklist phases completed
 - [ ] All validation checks passed
 - [ ] Every component has detailed engineering analysis
-- [ ] All diagrams use correct PlantUML syntax with proper cloud icon macros
+- [ ] All diagrams use correct syntax (PlantUML with cloud icon macros, or Eraser with proper properties)
 - [ ] No vague statements (all specifics with numbers, examples)
 - [ ] Consistent terminology used throughout
 - [ ] Trade-offs explained for major decisions

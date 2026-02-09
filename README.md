@@ -8,7 +8,7 @@ Three skills for technical documentation: architecture docs with C4 diagrams, te
 
 Generates architecture documentation from codebases with system diagrams, component analysis, and engineering rationale.
 
-- C4 Model Diagrams (system context, container, component) using Eraser syntax
+- C4 Model Diagrams (system context, container, component) using PlantUML/Kroki or Eraser syntax
 - Component Responsibility Matrix with dependencies, failure modes, recovery strategies
 - Configuration rationale, library choices, performance decisions with metrics
 - Decision log (ADRs) with context and consequences
