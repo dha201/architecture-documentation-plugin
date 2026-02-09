@@ -251,7 +251,7 @@ API > Database: SQL Queries
 **Eraser:**
 - **eraser-syntax.md** - Eraser syntax reference (nodes, groups, connections, properties)
 - **eraser-icon-reference.md** - Eraser icon catalog (AWS 700+, GCP 500+, Azure 400+, K8s, tech logos)
-- **eraser-diagram-examples.md** - 7 real-world Eraser diagram examples with complete code
+- **eraser-diagram-examples.md** - 13 production Eraser diagram examples (Azure AI RAG system)
 
 ## Engineering Analysis Requirements
 

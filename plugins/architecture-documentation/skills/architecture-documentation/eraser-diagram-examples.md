@@ -1,489 +1,762 @@
 # Eraser Diagram Examples
 
-Real-world diagram examples demonstrating Eraser's diagram-as-code syntax.
+Real-world architecture diagram examples using Eraser's diagram-as-code syntax, drawn from a production Azure AI RAG system.
 
 **Official Examples:** https://docs.eraser.io/docs/examples
 
-## Example 1: AWS Three-Tier Web Application
+**Diagram type:** Cloud Architecture Diagram (all figures)
 
-```
+---
+
+## Figure 1 -- Master Diagram
+
+*High-level architecture overview of the AI Support Agents system, Azure components, and data flows.*
+
+**Type:** Cloud Architecture Diagram
+
+```eraser
+// Figure 1 - Master Diagram: LCS AI RAG System Architecture
+// Type: Cloud Architecture Diagram
+
 direction right
 colorMode bold
 
-// External users
-Users [icon: users, label: "Web Users"]
+// External Actors
+Actors [color: blue, label: "External Actors"] {
+  Frontend [icon: react, label: "Frontend Client"]
+  Content Admin [icon: user, label: "Content Admin"]
+}
 
-// AWS Infrastructure
-AWS Cloud [icon: aws-cloud] {
-
-  VPC [icon: aws-vpc, label: "Production VPC"] {
-
-    // Web Tier (Public)
-    Public Subnet [icon: aws-public-subnet, color: green] {
-      ALB [icon: aws-elb, label: "Application Load Balancer"]
-      NAT Gateway [icon: aws-nat-gateway]
-    }
-
-    // App Tier (Private)
-    Private Subnet [icon: aws-private-subnet, color: blue] {
-      Web Server 1 [icon: aws-ec2, label: "EC2 (Web)"]
-      Web Server 2 [icon: aws-ec2, label: "EC2 (Web)"]
-
-      App Server 1 [icon: aws-lambda, label: "Lambda (API)"]
-      App Server 2 [icon: aws-lambda, label: "Lambda (API)"]
-
-      Cache [icon: aws-elasticache, shape: cylinder]
-    }
-
-    // Data Tier (Private)
-    Database Subnet [icon: aws-private-subnet, color: red] {
-      Primary DB [icon: aws-rds, label: "RDS Primary"]
-      Replica DB [icon: aws-rds, label: "RDS Replica"]
-    }
+// Azure Virtual Network
+Azure VNet [icon: azure-virtual-network, color: green, label: "Azure Virtual Network"] {
+  Container Apps [icon: docker, label: "Container Apps Environment"] {
+    Backend [icon: fastapi, label: "FastAPI Backend"]
+    Chunker [icon: fastapi, label: "Chunker Container App"]
+    CSVStore [icon: database, label: "CSVStore Service"]
   }
 
-  // Static assets
-  S3 [icon: aws-s3, label: "Static Assets"]
-  CloudFront [icon: aws-cloudfront, label: "CDN"]
-}
-
-// Connection flows
-Users > CloudFront: HTTPS
-CloudFront > S3: Static Files
-CloudFront > ALB: API Requests
-
-ALB > Web Server 1, Web Server 2: Distribute Load
-
-Web Server 1, Web Server 2 > App Server 1, App Server 2: Process
-
-App Server 1, App Server 2 > Cache: Cache Lookup
-App Server 1, App Server 2 > Primary DB: Read/Write
-Primary DB > Replica DB: Replicate
-```
-
-**Use case:** Standard web application with load balancing, caching, and database replication.
-
----
-
-## Example 2: Microservices Architecture
-
-```
-direction down
-styleMode shadow
-
-// API Gateway
-API Gateway [icon: aws-api-gateway, color: purple]
-
-// Microservices
-Services [color: blue] {
-  User Service [icon: docker, label: "User Service\n(Node.js)"]
-  Order Service [icon: docker, label: "Order Service\n(Java)"]
-  Payment Service [icon: docker, label: "Payment Service\n(Python)"]
-  Notification Service [icon: docker, label: "Notification Service\n(Go)"]
-}
-
-// Databases per service
-Databases [color: green] {
-  User DB [icon: postgres, shape: cylinder, label: "PostgreSQL"]
-  Order DB [icon: mongodb, shape: cylinder, label: "MongoDB"]
-  Payment DB [icon: mysql, shape: cylinder, label: "MySQL"]
-}
-
-// Message Queue
-Message Bus [icon: kafka, shape: queue, label: "Kafka Event Bus"]
-
-// Service Registry
-Service Registry [icon: kubernetes, label: "Kubernetes"]
-
-// Connections
-API Gateway > User Service, Order Service, Payment Service: REST
-
-User Service > User DB
-Order Service > Order DB
-Payment Service > Payment DB
-
-Order Service > Message Bus: Publish OrderCreated
-Payment Service < Message Bus: Subscribe
-Notification Service < Message Bus: Subscribe
-
-Service Registry > User Service, Order Service, Payment Service, Notification Service: Service Discovery
-```
-
-**Use case:** Event-driven microservices with database-per-service pattern.
-
----
-
-## Example 3: Data ETL Pipeline
-
-```
-direction right
-colorMode pastel
-
-// Data Sources
-Sources [color: blue, label: "Data Sources"] {
-  Oracle DB [icon: oracle, label: "Oracle\nTransactional DB"]
-  REST API [icon: rest-api, label: "External API"]
-  CSV Files [icon: csv, label: "CSV Uploads"]
-}
-
-// Ingestion Layer
-Ingestion [color: green, label: "Data Ingestion"] {
-  Kafka [icon: kafka, shape: queue, label: "Kafka Streams"]
-  S3 Raw [icon: aws-s3, label: "S3 Raw Zone"]
-}
-
-// Processing Layer
-Processing [color: orange, label: "Data Processing"] {
-  Spark [icon: spark, label: "Spark ETL"]
-  Databricks [icon: databricks, label: "Databricks\nTransform"]
-  S3 Processed [icon: aws-s3, label: "S3 Processed"]
-}
-
-// Analytics Layer
-Analytics [color: purple, label: "Analytics & BI"] {
-  Snowflake [icon: snowflake, shape: cylinder, label: "Snowflake\nData Warehouse"]
-  Tableau [icon: tableau, label: "Tableau\nDashboards"]
-}
-
-// Machine Learning
-ML [color: red, label: "ML Pipeline"] {
-  SageMaker [icon: aws-sagemaker, label: "SageMaker\nTraining"]
-  Model Registry [icon: database, shape: cylinder]
-}
-
-// Connections
-Oracle DB, REST API, CSV Files > Kafka: Stream Data
-Kafka > S3 Raw: Land Data
-
-S3 Raw > Spark: Batch Processing
-Spark > Databricks: Transform
-Databricks > S3 Processed: Clean Data
-
-S3 Processed > Snowflake: Load
-Snowflake > Tableau: Visualize
-Snowflake > SageMaker: ML Features
-SageMaker > Model Registry: Store Models
-```
-
-**Use case:** Modern data platform with streaming ingestion, batch processing, and analytics.
-
----
-
-## Example 4: Kubernetes Cluster Architecture
-
-```
-direction down
-
-// Control Plane
-Control Plane [icon: kubernetes, color: blue, label: "Kubernetes Control Plane"] {
-  API Server [icon: k8s-service, label: "API Server"]
-  Scheduler [icon: k8s-deployment, label: "Scheduler"]
-  Controller Manager [icon: k8s-deployment, label: "Controller Manager"]
-  etcd [icon: database, shape: cylinder, label: "etcd (State)"]
-}
-
-// Worker Nodes
-Worker Nodes [color: green] {
-
-  Node 1 [icon: k8s-node, label: "Worker Node 1"] {
-    Kubelet 1 [icon: k8s-pod]
-    Pods 1 [icon: k8s-pod, label: "Application Pods"]
+  Functions [icon: azure-function-apps, label: "Azure Function App"] {
+    load_csv [icon: python, label: "load_csv.py"]
+    process_others [icon: python, label: "process_others.py"]
+    monitor_deletions [icon: python, label: "monitor_deletions.py"]
   }
 
-  Node 2 [icon: k8s-node, label: "Worker Node 2"] {
-    Kubelet 2 [icon: k8s-pod]
-    Pods 2 [icon: k8s-pod, label: "Application Pods"]
-  }
-
-  Node 3 [icon: k8s-node, label: "Worker Node 3"] {
-    Kubelet 3 [icon: k8s-pod]
-    Pods 3 [icon: k8s-pod, label: "Application Pods"]
+  Private Endpoints [icon: network, label: "Private Endpoint Subnet"] {
+    PE OpenAI [icon: azure-cognitive-services, label: "PE: OpenAI"]
+    PE Search [icon: azure-search-services, label: "PE: AI Search"]
+    PE Cosmos [icon: azure-cosmos-db, label: "PE: CosmosDB"]
+    PE KeyVault [icon: azure-key-vault, label: "PE: Key Vault"]
   }
 }
 
-// External Components
-Ingress Controller [icon: k8s-ingress, label: "Nginx Ingress"]
-Persistent Storage [icon: k8s-persistent-volume, shape: cylinder]
-
-// Cloud Providers
-Cloud Providers [color: orange] {
-  AWS [icon: aws-cloud]
-  Azure [icon: azure-cloud]
-  GCP [icon: gcp-cloud]
+// Azure PaaS Services
+Azure PaaS [color: orange, label: "Azure PaaS Services"] {
+  OpenAI [icon: azure-cognitive-services, label: "Azure OpenAI\ngpt-5-mini"]
+  AI Search [icon: azure-search-services, label: "Azure AI Search\nBM25 + HNSW"]
+  CosmosDB [icon: azure-cosmos-db, label: "Azure CosmosDB\nServerless"]
+  Key Vault [icon: azure-key-vault, label: "Azure Key Vault"]
+  Doc Intelligence [icon: azure-cognitive-services, label: "Document Intelligence"]
+  Blob Storage [icon: azure-blob-storage, label: "Azure Blob Storage"]
 }
 
-// Connections
-API Server > etcd: Store State
-API Server > Scheduler, Controller Manager
-Scheduler > API Server: Watch Pods
-Controller Manager > API Server: Reconcile
+// Observability
+Observability [color: purple, label: "Observability"] {
+  App Insights [icon: azure-application-insights, label: "Application Insights"]
+  Log Analytics [icon: azure-log-analytics-workspaces, label: "Log Analytics"]
+}
 
-Kubelet 1, Kubelet 2, Kubelet 3 > API Server: Report Status
-API Server > Kubelet 1, Kubelet 2, Kubelet 3: Deploy Pods
+// External
+External [color: red, label: "External Services"] {
+  Snowflake [icon: snowflake, label: "Snowflake\nFile metadata"]
+}
 
-Ingress Controller > Pods 1, Pods 2, Pods 3: Route Traffic
-Pods 1, Pods 2, Pods 3 > Persistent Storage: Read/Write
+// User-facing
+Frontend > Backend: HTTPS + Bearer JWT [textSize: large]
+Content Admin > Blob Storage: Upload PDF/DOCX/XLSX/CSV [textSize: large]
 
-Cloud Providers > Worker Nodes: Provision Infrastructure
+// Query flow (via private endpoints)
+Backend > PE OpenAI > OpenAI: Route + generate [textSize: large]
+Backend > PE Search > AI Search: Hybrid search [textSize: large]
+Backend > PE Cosmos > CosmosDB: Persist conversations [textSize: large]
+Backend > PE KeyVault > Key Vault: Retrieve secrets [textSize: large]
+Backend > CSVStore: CSV queries [textSize: large]
+
+// Document processing
+Blob Storage > load_csv: Blob trigger (csv/) [textSize: large]
+Blob Storage > process_others: Blob trigger (others/) [textSize: large]
+process_others > Chunker: HTTP POST /process [textSize: large]
+Chunker > Doc Intelligence: DOCX extraction [textSize: large]
+Chunker > AI Search: Upload chunks + vectors [textSize: large]
+load_csv > Snowflake: CSV metadata [textSize: large]
+process_others > Snowflake: Dedup + track [textSize: large]
+monitor_deletions > Snowflake: Reconcile deletions [textSize: large]
+CSVStore > Blob Storage: Load CSVs at startup [textSize: large]
+
+// Telemetry
+Backend --> App Insights: Traces [textSize: large]
+App Insights --> Log Analytics: Backing store [textSize: large]
+OpenAI --> Log Analytics: Diagnostics [textSize: large]
+AI Search --> Log Analytics: Diagnostics [textSize: large]
+CosmosDB --> Log Analytics: Diagnostics [textSize: large]
 ```
-
-**Use case:** Complete Kubernetes cluster showing control plane, workers, and cloud integration.
 
 ---
 
-## Example 5: Serverless Event-Driven Architecture
+## Figure 2 -- End-to-End Query Flow Sequence Diagram
 
-```
+*Traces a single user query from submission through JWT validation, routing, search, streaming, and persistence.*
+
+**Type:** Cloud Architecture Diagram
+
+```eraser
+// Figure 2 - End-to-End Query Flow
+// Type: Cloud Architecture Diagram
+
 direction right
 colorMode bold
 
-// Event Sources
-Sources [color: blue, label: "Event Sources"] {
-  S3 Upload [icon: aws-s3, label: "S3 Bucket"]
-  API Gateway [icon: aws-api-gateway, label: "API Gateway"]
-  Schedule [icon: clock, label: "CloudWatch Events"]
-  DynamoDB Stream [icon: aws-dynamodb, label: "DynamoDB Stream"]
+// Client
+Frontend [icon: react, color: blue, label: "Frontend Client"] {
+  EventSource [icon: monitor, label: "POST /api/chat"]
 }
 
-// Event Bus
-Event Bus [icon: aws-eventbridge, shape: queue, label: "EventBridge"]
-
-// Lambda Functions
-Functions [color: green, label: "Lambda Functions"] {
-  Image Processor [icon: aws-lambda, label: "Image\nProcessor"]
-  Data Validator [icon: aws-lambda, label: "Data\nValidator"]
-  Report Generator [icon: aws-lambda, label: "Report\nGenerator"]
-  Email Sender [icon: aws-lambda, label: "Email\nSender"]
+// Backend
+FastAPI Backend [icon: fastapi, color: green, label: "FastAPI Backend (stream.py)"] {
+  JWT Auth [icon: python, label: "JWT Validation\nEmail + expiry check"]
+  Router [icon: python, label: "Query Router\ngpt-5-mini"]
+  Stream Handler [icon: python, label: "Stream Handler"]
 }
 
-// Storage & Databases
-Storage [color: orange] {
-  Images [icon: aws-s3, label: "Processed\nImages"]
-  Database [icon: aws-dynamodb, shape: cylinder, label: "DynamoDB"]
-  Archive [icon: aws-glacier, shape: cylinder, label: "Glacier\nArchive"]
+// AI Services
+AI Services [icon: azure-cognitive-services, color: orange, label: "Azure AI Services"] {
+  Router LLM [icon: azure-cognitive-services, label: "Router LLM\ngpt-5-mini"]
+  AI Search [icon: azure-search-services, label: "Azure AI Search"]
+  Answer LLM [icon: azure-cognitive-services, label: "Answer LLM\ngpt-5-mini"]
 }
 
-// Notification
-Notification [icon: aws-sns, label: "SNS Topic"]
+// Persistence
+Persistence [icon: azure-cosmos-db, color: purple, label: "Persistence"] {
+  CosmosDB [icon: azure-cosmos-db, label: "Azure CosmosDB\nAwaited before [DONE]"]
+}
 
-// Connections
-S3 Upload > Event Bus: File Uploaded
-API Gateway > Event Bus: API Request
-Schedule > Event Bus: Scheduled Event
-DynamoDB Stream > Event Bus: Data Changed
-
-Event Bus > Image Processor: Process Image
-Event Bus > Data Validator: Validate Data
-Event Bus > Report Generator: Generate Report
-
-Image Processor > Images: Save
-Data Validator > Database: Store
-Report Generator > Archive: Archive Report
-
-Image Processor, Data Validator, Report Generator > Notification: Success
-Notification > Email Sender: Send Email
+// Request flow
+EventSource > JWT Auth: HTTPS + Bearer JWT [textSize: large]
+JWT Auth > Router: Validated request [textSize: large]
+Router > Router LLM: Chat completion (tool definitions) [textSize: large]
+Router LLM > AI Search: function_general_company [textSize: large]
+AI Search > Stream Handler: Ranked chunks (top 20) [textSize: large]
+Stream Handler > Answer LLM: Context + query (stream=True) [textSize: large]
+Answer LLM > EventSource: SSE: text-delta tokens [textSize: large]
+Stream Handler > CosmosDB: Persist after stream [textSize: large]
 ```
-
-**Use case:** Fully serverless architecture with event-driven processing.
 
 ---
 
-## Example 6: Multi-Region High Availability
+## Figure 3 -- Query Router Internal Flow
 
-```
-direction down
+*Shows how incoming queries are analyzed for language, classified by intent, and routed to the correct agent.*
 
-// Global Load Balancer
-Global LB [icon: aws-route-53, label: "Route 53\nGeoDNS"]
+**Type:** Cloud Architecture Diagram
 
-// Primary Region
-Region US East [icon: aws-region, color: green, label: "us-east-1 (Primary)"] {
-  VPC East [icon: aws-vpc] {
-    ALB East [icon: aws-elb]
-    Servers East [icon: aws-ec2, label: "EC2 Auto Scaling"]
-    RDS East [icon: aws-rds, label: "RDS Primary"]
-  }
-  S3 East [icon: aws-s3, label: "S3 Bucket"]
-}
+```eraser
+// Figure 3 - Query Router
+// Type: Cloud Architecture Diagram
 
-// Secondary Region
-Region US West [icon: aws-region, color: orange, label: "us-west-2 (DR)"] {
-  VPC West [icon: aws-vpc] {
-    ALB West [icon: aws-elb]
-    Servers West [icon: aws-ec2, label: "EC2 Auto Scaling"]
-    RDS West [icon: aws-rds, label: "RDS Read Replica"]
-  }
-  S3 West [icon: aws-s3, label: "S3 Bucket (Replica)"]
-}
-
-// Connections
-Global LB > ALB East, ALB West: Route Traffic
-ALB East > Servers East
-ALB West > Servers West
-Servers East > RDS East
-Servers West > RDS West
-Servers East, Servers West > S3 East, S3 West
-
-RDS East > RDS West: Cross-Region Replication
-S3 East > S3 West: Cross-Region Replication
-```
-
-**Use case:** Active-passive multi-region setup with disaster recovery.
-
----
-
-## Example 7: CI/CD Pipeline
-
-```
 direction right
+colorMode bold
 
-// Source Control
-Source [icon: github, label: "GitHub\nRepository"]
+// Input
+User Query [icon: user, label: "User Query"]
 
-// CI/CD Pipeline
-Pipeline [color: blue, label: "CI/CD Pipeline"] {
-  Build [icon: jenkins, label: "Jenkins\nBuild"]
-  Test [icon: pytest, label: "Automated\nTests"]
-  Security Scan [icon: security, label: "Security\nScan"]
-  Package [icon: docker, label: "Docker\nBuild"]
+// Router
+Router [icon: azure-cognitive-services, color: green, label: "Query Router (gpt-5-mini)"] {
+  Language Check [icon: python, label: "Language Detection"]
+  Intent Classification [icon: python, label: "Intent Classification\nFunction calling"]
 }
 
-// Artifact Storage
-Registry [icon: docker, shape: cylinder, label: "Container\nRegistry"]
+// Agent Selection
+Agents [color: blue, label: "Agent Selection"] {
+  RAG Agent [icon: azure-search-services, label: "RAG Agent\nfunction_general_company"]
+  CSV Agent [icon: database, label: "CSV Data Agent\ncompany_data_analysis"]
+  Direct Fallback [icon: azure-cognitive-services, label: "Direct LLM Fallback"]
+}
 
-// Deployment Stages
-Environments [color: green, label: "Deployment Stages"] {
-  Dev [icon: kubernetes, label: "Dev\nCluster"]
-  Staging [icon: kubernetes, label: "Staging\nCluster"]
-  Production [icon: kubernetes, label: "Production\nCluster"]
+// Output
+Output [color: orange, label: "Response Pipeline"] {
+  SSE Stream [icon: python, label: "SSE Streaming"]
+  CosmosDB [icon: azure-cosmos-db, label: "CosmosDB\nAsync persistence"]
+}
+
+// Connections
+User Query > Language Check: Incoming query [textSize: large]
+Language Check > Intent Classification: English [textSize: large]
+Intent Classification > RAG Agent: Document queries [textSize: large]
+Intent Classification > CSV Agent: Structured data queries [textSize: large]
+Intent Classification > Direct Fallback: No tool match [textSize: large]
+RAG Agent > SSE Stream [textSize: large]
+CSV Agent > SSE Stream [textSize: large]
+Direct Fallback > SSE Stream [textSize: large]
+SSE Stream > CosmosDB: Persist after stream [textSize: large]
+```
+
+---
+
+## Figure 4 -- RAG Agent Internal Flow
+
+*Details the retrieval-augmented generation pipeline: query validation, hybrid search, context assembly, and grounded response generation.*
+
+**Type:** Cloud Architecture Diagram
+
+```eraser
+// Figure 4 - RAG Agent Pipeline
+// Type: Cloud Architecture Diagram
+
+direction right
+colorMode bold
+
+// Input
+User Query [icon: user, label: "User Query"]
+
+// Retrieval
+Retrieval [icon: azure-search-services, color: blue, label: "Azure AI Search (Hybrid)"] {
+  BM25 [icon: azure-search-services, label: "BM25 Search"]
+  HNSW [icon: azure-search-services, label: "HNSW Vector Search"]
+  RRF [icon: python, label: "Reciprocal Rank Fusion\nk=60, top_k=20"]
+}
+
+// Context
+Context [icon: python, color: green, label: "Context Assembly"] {
+  Chunk Builder [icon: python, label: "Chunk Builder\nTitle + Content per chunk"]
+}
+
+// Generation
+Generation [icon: azure-cognitive-services, color: orange, label: "Azure OpenAI (gpt-5-mini)"] {
+  Answer LLM [icon: azure-cognitive-services, label: "Answer LLM\nstream=True"]
+}
+
+// Output
+Response [icon: python, color: purple, label: "Response"] {
+  SSE Stream [icon: python, label: "Async Stream\nYield tokens via SSE"]
+}
+
+// Connections
+User Query > BM25: Query text [textSize: large]
+User Query > HNSW: Query embedding [textSize: large]
+BM25 > RRF: Keyword results [textSize: large]
+HNSW > RRF: Vector results [textSize: large]
+RRF > Chunk Builder: Top 20 ranked chunks [textSize: large]
+Chunk Builder > Answer LLM: System prompt + context [textSize: large]
+Answer LLM > SSE Stream: Token-by-token [textSize: large]
+```
+
+---
+
+## Figure 5 -- Document Processing Pipeline
+
+*Event-driven pipeline: document upload, format detection, extraction, chunking, summarization, indexing, and lifecycle management.*
+
+**Type:** Cloud Architecture Diagram
+
+```eraser
+// Figure 5 - Document Processing Pipeline
+// Type: Cloud Architecture Diagram
+
+direction right
+colorMode bold
+
+// Entry
+Content Admin [icon: user, label: "Content Admin"]
+
+// Storage Layer
+Blob Storage [color: blue, label: "Azure Blob Storage"] {
+  others [icon: azure-blob-storage, label: "others/"]
+  csv [icon: azure-blob-storage, label: "csv/"]
+  archive [icon: azure-blob-storage, label: "archive/"]
+  error [icon: azure-blob-storage, label: "error/"]
+}
+
+// Event Triggers
+Azure Functions [icon: azure-function-apps, color: green, label: "Azure Functions"] {
+  load_csv [icon: python, label: "load_csv.py\nBlob trigger"]
+  process_others [icon: python, label: "process_others.py\nBlob trigger"]
+  monitor_deletions [icon: python, label: "monitor_deletions.py\nTimer trigger"]
+}
+
+// Processing
+Chunker [icon: docker, color: purple, label: "Chunker Container App"] {
+  Queue [icon: queue, label: "Thread Queue"]
+  Extraction [icon: python, label: "Format Extraction"]
+  Chunking [icon: python, label: "Markdown Chunker"]
+}
+
+// AI Services
+AI Services [icon: azure-cognitive-services, color: orange, label: "Azure AI Services"] {
+  Doc Intelligence [icon: azure-cognitive-services, label: "Document Intelligence"]
+  OpenAI [icon: azure-cognitive-services, label: "Azure OpenAI\ngpt-5-mini"]
+}
+
+// Data Layer
+Data Layer [color: red, label: "Data & Index Layer"] {
+  Snowflake [icon: snowflake, label: "Snowflake\nFile metadata"]
+  AI Search [icon: azure-search-services, label: "Azure AI Search\nBM25 + HNSW"]
+}
+
+// Connections
+Content Admin > others: Upload documents [textSize: large]
+Content Admin > csv: Upload CSVs [textSize: large]
+others > process_others: Blob trigger [textSize: large]
+csv > load_csv: Blob trigger [textSize: large]
+process_others > Snowflake: Dedup + upsert metadata [textSize: large]
+process_others > Queue: HTTP POST /process [textSize: large]
+load_csv > Snowflake: Store CSV metadata [textSize: large]
+Queue > Extraction: Dequeue file [textSize: large]
+Extraction > Doc Intelligence: DOCX files [textSize: large]
+Extraction > Chunking: Markdown output [textSize: large]
+Chunking > OpenAI: Summarize chunks [textSize: large]
+Chunking > AI Search: Upload chunks + vectors [textSize: large]
+AI Search > Snowflake: Update status [textSize: large]
+Chunking > archive: On success [textSize: large]
+Chunking > error: On failure [textSize: large]
+monitor_deletions > Snowflake: Reconcile expired [textSize: large]
+monitor_deletions > AI Search: Delete orphaned docs [textSize: large]
+```
+
+---
+
+## Figure 6 -- Pandas Agent Internal Flow
+
+*CSV Data Agent: natural language query to pandas code generation, iterative self-correction, and result streaming.*
+
+**Type:** Cloud Architecture Diagram
+
+```eraser
+// Figure 6 - Pandas Agent (CSV Data Agent)
+// Type: Cloud Architecture Diagram
+
+direction right
+colorMode bold
+
+// Input
+User Query [icon: user, label: "Natural Language Query"]
+
+// Agent Cache
+Agent Layer [icon: python, color: green, label: "Pandas Agent (cached)"] {
+  Agent Cache [icon: python, label: "Agent Cache\nKeyed by endpoint + DFs"]
+  DataFrames [icon: database, label: "In-Memory DataFrames"]
+}
+
+// Code Generation
+Code Gen [icon: azure-cognitive-services, color: orange, label: "LLM Code Generation (gpt-5-mini)"] {
+  Generator [icon: azure-cognitive-services, label: "Pandas Code Generator\nMax 10 iterations"]
+}
+
+// Execution
+Execution [icon: python, color: blue, label: "Code Execution"] {
+  Executor [icon: python, label: "Execute on DataFrames"]
+}
+
+// Output
+Response [icon: python, color: purple, label: "Response"] {
+  SSE Stream [icon: python, label: "astream_events(v2)"]
+}
+
+// Connections
+User Query > Agent Cache: Get or create agent [textSize: large]
+Agent Cache > DataFrames: Load CSVs [textSize: large]
+User Query > Generator: NL query [textSize: large]
+Generator > Executor: Generated pandas code [textSize: large]
+Executor > Generator: Exception feedback (self-correction) [textSize: large]
+Executor > SSE Stream: Formatted result [textSize: large]
+```
+
+---
+
+## Figure 7 -- CosmosDB Storage Architecture
+
+*Conversation persistence: post-stream write, feedback upserts, and document schema.*
+
+**Type:** Architecture Diagram
+
+```eraser
+// Figure 7 - CosmosDB Storage Architecture
+// Type: Cloud Architecture Diagram
+
+direction right
+colorMode bold
+
+// Application Layer
+FastAPI Backend [icon: fastapi, color: green, label: "FastAPI Backend"] {
+  Stream Handler [icon: python, label: "Stream Handler\nstream.py"]
+  Feedback API [icon: python, label: "Feedback API\nmain.py"]
+}
+
+// Client Layer
+Client Layer [icon: python, color: blue, label: "Client Layer"] {
+  CosmosDB Client [icon: azure-cosmos-db, label: "CosmosDB Client\nazure-cosmos SDK"]
+}
+
+// Azure CosmosDB
+Azure CosmosDB [icon: azure-cosmos-db, color: blue, label: "Azure CosmosDB (Serverless)"] {
+  lcs_chatbot [icon: database, label: "lcs_chatbot Database"]
+  chats [icon: database, label: "chats Container"]
+}
+
+// Document Schema
+Document Schema [icon: json, color: orange, label: "Document Schema"] {
+  Chat Document [icon: json, label: "Chat Document\nmessageId (partition)"]
+}
+
+// Connections
+Stream Handler > CosmosDB Client: insert_chat_message() [textSize: large]
+Feedback API > CosmosDB Client: update_feedback() [textSize: large]
+CosmosDB Client > chats: create_item() [textSize: large]
+CosmosDB Client > chats: upsert_item() [textSize: large]
+chats - Chat Document
+```
+
+---
+
+## Figure 8 -- SSE Streaming Protocol
+
+*Token-by-token streaming: tool call fragment assembly, response streaming, and SSE event lifecycle.*
+
+**Type:** Cloud Architecture Diagram
+
+```eraser
+// Figure 8 - SSE Streaming Protocol
+// Type: Cloud Architecture Diagram
+
+direction right
+colorMode bold
+
+// LLM Source
+LLM Source [icon: azure-cognitive-services, color: orange, label: "Azure OpenAI (Async Stream)"] {
+  Tool Chunks [icon: azure-cognitive-services, label: "Tool Call Fragments"]
+  Content Chunks [icon: azure-cognitive-services, label: "Content Tokens"]
+}
+
+// Stream Handler
+Stream Handler [icon: fastapi, color: green, label: "Streaming Handler (stream.py)"] {
+  Tool Assembler [icon: python, label: "Tool Call Assembler"]
+  Token Relay [icon: python, label: "Token Relay\nSSE event formatting"]
+}
+
+// SSE Events
+SSE Protocol [color: blue, label: "SSE Event Types"] {
+  Tool Events [icon: python, label: "tool-input-start\ntool-output-available"]
+  Text Events [icon: python, label: "text-start\ntext-delta\ntext-end"]
+  Control Events [icon: python, label: "start, finish, [DONE]"]
+}
+
+// Client
+Frontend [icon: react, color: purple, label: "Frontend Client"] {
+  EventSource [icon: monitor, label: "EventSource API"]
+}
+
+// Connections
+Tool Chunks > Tool Assembler: Fragment accumulation [textSize: large]
+Content Chunks > Token Relay: Token passthrough [textSize: large]
+Tool Assembler > Tool Events: After execution [textSize: large]
+Token Relay > Text Events: Per token [textSize: large]
+Token Relay > Control Events: Lifecycle [textSize: large]
+Tool Events > EventSource: SSE stream [textSize: large]
+Text Events > EventSource: SSE stream [textSize: large]
+Control Events > EventSource: SSE stream [textSize: large]
+```
+
+---
+
+## Figure 9 -- Dependency Graph
+
+*Shared state and dependencies: startup caching, per-request client creation, and cross-component relationships.*
+
+**Type:** Architecture Diagram
+
+```eraser
+// Figure 9 - Dependency Graph
+// Type: Cloud Architecture Diagram
+
+direction down
+colorMode bold
+
+// Startup (one-time initialization)
+Startup Cache [icon: python, color: green, label: "Startup Layer (one-time)"] {
+  Settings [icon: python, label: "Settings\n@lru_cache"]
+  JWKS [icon: python, label: "PyJWKClient"]
+  CSVStore [icon: database, label: "CSVStore\npandas DataFrames"]
+  Agent Cache [icon: python, label: "Pandas Agent Cache"]
+}
+
+// Backend API (per-request)
+Backend API [icon: fastapi, color: blue, label: "Backend API (per-request)"] {
+  Routing [icon: python, label: "main.py + stream.py"]
+  General Agent [icon: python, label: "general/agent.py\nRAG Agent"]
+  CSV Agent [icon: python, label: "csv/agent.py\nPandas Agent"]
+  Clients [icon: azure-cognitive-services, label: "Azure SDK Clients"]
+}
+
+// Function App
+Function App [icon: azure-function-apps, color: orange, label: "Azure Functions"] {
+  load_csv [icon: python, label: "load_csv.py"]
+  process_others [icon: python, label: "process_others.py"]
+  monitor_deletions [icon: python, label: "monitor_deletions.py"]
+}
+
+// Chunker
+Chunker [icon: docker, color: purple, label: "Chunker Container App"] {
+  Worker [icon: queue, label: "Worker Thread"]
+  Chunker Clients [icon: azure-cognitive-services, label: "Azure SDK Clients"]
+}
+
+// External
+External [color: red, label: "External Services"] {
+  Blob [icon: azure-blob-storage, label: "Azure Blob Storage"]
+  Snowflake [icon: snowflake, label: "Snowflake"]
+}
+
+// Startup flow
+Settings > JWKS [textSize: large]
+Settings > CSVStore [textSize: large]
+CSVStore > Agent Cache [textSize: large]
+
+// Runtime dependencies
+Routing > General Agent: RAG queries [textSize: large]
+Routing > CSV Agent: CSV queries [textSize: large]
+Routing > Clients: Creates per-request [textSize: large]
+CSV Agent > Agent Cache: Reuses cached agent [textSize: large]
+
+// Cross-system
+process_others > Worker: HTTP POST /process [textSize: large]
+load_csv > Snowflake: Track metadata [textSize: large]
+process_others > Snowflake: Dedup + track [textSize: large]
+monitor_deletions > Snowflake: Reconcile deletions [textSize: large]
+Worker > Snowflake: Update status [textSize: large]
+load_csv --> Blob: Blob trigger [textSize: large]
+process_others --> Blob: Blob trigger [textSize: large]
+```
+
+---
+
+## Figure 10 -- Security Architecture
+
+*Defense-in-depth: 6 layers from network perimeter through private endpoints, managed identity, RBAC, to JWT validation.*
+
+**Type:** Architecture Diagram
+
+```eraser
+// Figure 10 - Security Architecture
+// Type: Cloud Architecture Diagram
+
+direction down
+colorMode bold
+
+// Entry
+User [icon: user, label: "Authenticated User"]
+
+// Layer 1: Perimeter
+Perimeter [icon: azure-firewall, color: red, label: "Perimeter"] {
+  NSG [icon: azure-firewall, label: "NSG\nHTTPS only"]
+}
+
+// Layer 2: Network
+Network [icon: azure-virtual-network, color: orange, label: "Network Isolation"] {
+  VNet [icon: azure-virtual-network, label: "Azure VNet\n5 subnets"]
+  App Subnet [icon: docker, label: "Container Apps"]
+  PE Subnet [icon: network, label: "Private Endpoints"]
+  Func Subnet [icon: azure-function-apps, label: "Functions"]
+  Agent Subnet [icon: azure-devops, label: "DevOps Agent"]
+}
+
+// Layer 3: Private Endpoints
+Private Connectivity [color: blue, label: "Private Endpoints (6)"] {
+  PE OpenAI [icon: azure-cognitive-services, label: "PE: OpenAI"]
+  PE Search [icon: azure-search-services, label: "PE: AI Search"]
+  PE Cosmos [icon: azure-cosmos-db, label: "PE: CosmosDB"]
+  PE KeyVault [icon: azure-key-vault, label: "PE: Key Vault"]
+  PE Blob [icon: azure-blob-storage, label: "PE: Blob"]
+  PE DocIntel [icon: azure-cognitive-services, label: "PE: Doc Intel"]
+}
+
+// Layer 4: Identity
+Identity [icon: azure-active-directory, color: purple, label: "Identity"] {
+  Managed Identities [icon: azure-active-directory, label: "Managed Identities\n5 total"]
+}
+
+// Layer 5: RBAC
+Authorization [color: green, label: "RBAC"] {
+  RBAC Roles [icon: azure-active-directory, label: "6 Azure RBAC Roles"]
+}
+
+// Layer 6: Application
+Application [color: green, label: "Application"] {
+  JWT [icon: python, label: "JWT Validation\nEdDSA via JWKS"]
+}
+
+// Traffic flow
+User > NSG: HTTPS [textSize: large]
+NSG > VNet: Allowed traffic [textSize: large]
+VNet > App Subnet [textSize: large]
+App Subnet > PE Subnet: Private traffic only [textSize: large]
+PE Subnet > PE OpenAI, PE Search, PE Cosmos, PE KeyVault [textSize: large]
+Managed Identities > RBAC Roles: Assigned roles [textSize: large]
+JWT > App Subnet: Validates requests [textSize: large]
+```
+
+---
+
+## Figure 11 -- CI/CD Architecture
+
+*Two-stage deployment: Microsoft-hosted bootstrap, then self-hosted VNet agent for Terraform + container deployment.*
+
+**Type:** Architecture Diagram
+
+```eraser
+// Figure 11 - Azure DevOps Deployment Pipeline
+// Type: Cloud Architecture Diagram
+
+direction right
+colorMode bold
+
+// Trigger
+Trigger [icon: azure-devops, color: blue, label: "Trigger"] {
+  Git Push [icon: azure-devops, label: "Git Push\nmain branch"]
+  Git Tag [icon: azure-devops, label: "Git Tag\nv* / release-*"]
+}
+
+// Stage 1
+Stage 1 [icon: azure-devops, color: green, label: "Stage 1: Bootstrap (MS-Hosted)"] {
+  TF Target [icon: terraform, label: "Terraform Apply\n-target 12 resources"]
+  Wait [icon: python, label: "Sleep 120s\nAgent registration"]
+}
+
+// Bootstrapped
+Bootstrapped [icon: azure-container-instances, color: orange, label: "Bootstrapped Resources"] {
+  VNet Subnet [icon: azure-virtual-network, label: "VNet Subnet + NSG"]
+  ACI Agent [icon: azure-container-instances, label: "ACI Self-Hosted Agent"]
+}
+
+// Stage 2
+Stage 2 [icon: docker, color: purple, label: "Stage 2: Deploy (VNet Agent)"] {
+  TF Full [icon: terraform, label: "Terraform Apply\nFull state"]
+  ACR Build [icon: docker, label: "ACR Build\nDocker image"]
+  CA Update [icon: docker, label: "Container App Update"]
+  Health Check [icon: monitor, label: "GET /health"]
+}
+
+// Pipeline flow
+Git Push > TF Target: Triggers pipeline [textSize: large]
+Git Tag > TF Target: Triggers pipeline [textSize: large]
+TF Target > Wait [textSize: large]
+Wait > VNet Subnet: Provisions [textSize: large]
+Wait > ACI Agent: Provisions [textSize: large]
+ACI Agent > TF Full: Agent online [textSize: large]
+TF Full > ACR Build: Infra ready [textSize: large]
+ACR Build > CA Update: Image pushed [textSize: large]
+CA Update > Health Check: Revision deployed [textSize: large]
+```
+
+---
+
+## Figure 12 -- Deployment Pipeline Sequence
+
+*Handoff between Microsoft-hosted and self-hosted agents, two-phase Terraform, and push-to-production verification.*
+
+**Type:** Cloud Architecture Diagram
+
+```eraser
+// Figure 12 - Deployment Pipeline (Detailed)
+// Type: Cloud Architecture Diagram
+
+direction right
+colorMode bold
+
+// Trigger
+Trigger [icon: user, color: blue, label: "Trigger"] {
+  Developer [icon: user, label: "Developer\nGit push / tag"]
+}
+
+// Stage 1
+Stage 1 [icon: azure-devops, color: green, label: "Stage 1: Bootstrap (MS-Hosted)"] {
+  ADO Pipeline [icon: azure-devops, label: "ADO Pipeline"]
+  TF Bootstrap [icon: terraform, label: "Terraform -target\n12 resources"]
+  Agent Startup [icon: azure-container-instances, label: "ACI Agent\n120s cold start"]
+}
+
+// Stage 2
+Stage 2 [icon: docker, color: purple, label: "Stage 2: Deploy (VNet Agent)"] {
+  TF Full [icon: terraform, label: "Terraform Apply\nFull state"]
+  ACR Build [icon: docker, label: "ACR Build"]
+  CA Update [icon: docker, label: "Container App Update"]
+  Health Check [icon: monitor, label: "GET /health"]
+}
+
+// Connections
+Developer > ADO Pipeline: Git push / tag [textSize: large]
+ADO Pipeline > TF Bootstrap: Stage 1 [textSize: large]
+TF Bootstrap > Agent Startup: Resources provisioned [textSize: large]
+Agent Startup > TF Full: Agent online [textSize: large]
+TF Full > ACR Build: Infra ready [textSize: large]
+ACR Build > CA Update: Image pushed [textSize: large]
+CA Update > Health Check: Revision deployed [textSize: large]
+```
+
+---
+
+## Figure 13 -- Observability Architecture
+
+*Telemetry flow: application traces, Azure diagnostic settings, Log Analytics aggregation, and operational outputs.*
+
+**Type:** Architecture Diagram
+
+```eraser
+// Figure 13 - Observability Architecture
+// Type: Cloud Architecture Diagram
+
+direction down
+colorMode bold
+
+// Application
+Application [icon: fastapi, color: green, label: "Application Layer"] {
+  Backend [icon: fastapi, label: "FastAPI Backend\nNo APM SDK"]
+}
+
+// Azure PaaS
+Azure PaaS [color: orange, label: "Azure PaaS (Diagnostic Settings)"] {
+  OpenAI Svc [icon: azure-cognitive-services, label: "Azure OpenAI"]
+  AISearch Svc [icon: azure-search-services, label: "AI Search"]
+  CosmosDB Svc [icon: azure-cosmos-db, label: "CosmosDB"]
+  KeyVault Svc [icon: azure-key-vault, label: "Key Vault"]
+  DocIntel Svc [icon: azure-cognitive-services, label: "Doc Intelligence"]
 }
 
 // Monitoring
-Monitoring [color: orange] {
-  Logs [icon: elasticsearch, label: "ELK Stack"]
-  Metrics [icon: prometheus, label: "Prometheus"]
-  Alerts [icon: grafana, label: "Grafana"]
+Monitoring [color: purple, label: "Centralized Monitoring"] {
+  AppInsights [icon: azure-application-insights, label: "Application Insights"]
+  LogAnalytics [icon: azure-log-analytics-workspaces, label: "Log Analytics\n30-day retention"]
 }
 
-// Connections
-Source > Build: Webhook
-Build > Test: Compile
-Test > Security Scan: Pass
-Security Scan > Package: Pass
-Package > Registry: Push Image
-
-Registry > Dev: Auto Deploy
-Dev > Staging: Manual Approve
-Staging > Production: Manual Approve
-
-Dev, Staging, Production > Logs: Send Logs
-Dev, Staging, Production > Metrics: Send Metrics
-Metrics > Alerts: Alert Rules
-```
-
-**Use case:** Complete CI/CD pipeline with automated testing and progressive deployment.
-
----
-
-## Tips for Creating Effective Diagrams
-
-### 1. Start Simple
-Begin with major components, then add detail:
-```
-// Start with this
-Frontend > Backend > Database
-
-// Then expand
-Frontend [icon: react]
-Backend [icon: nodejs]
-Database [icon: postgres]
-
-// Finally add details
-Frontend [icon: react, label: "React SPA\nv18.2"]
-Backend [icon: nodejs, label: "Express API\nPort 3000"]
-Database [icon: postgres, shape: cylinder, label: "PostgreSQL 15"]
-```
-
-### 2. Use Consistent Colors
-Color code by tier, environment, or responsibility:
-```
-colorMode bold
-
-// By tier
-Web Tier [color: green] { ... }
-App Tier [color: blue] { ... }
-Data Tier [color: red] { ... }
-
-// By environment
-Dev [color: yellow] { ... }
-Staging [color: orange] { ... }
-Prod [color: red] { ... }
-```
-
-### 3. Add Meaningful Labels
-Include versions, ports, instance counts:
-```
-API [icon: nodejs, label: "Express API\nv4.18\nPort: 8080"]
-Database [icon: postgres, label: "PostgreSQL 15\n(3 replicas)"]
-Cache [icon: redis, label: "Redis 7\n16GB RAM"]
-```
-
-### 4. Show Data Transformations
-Label connections with what flows:
-```
-Client > API: HTTP POST /orders
-API > Queue: OrderCreated Event (JSON)
-Queue > Worker: Message (Protobuf)
-Worker > Database: INSERT order (SQL)
-```
-
-### 5. Group Logically
-Use groups to show boundaries:
-```
-AWS Account [icon: aws-account] {
-  Production VPC [icon: aws-vpc] {
-    Public Subnet { ... }
-    Private Subnet { ... }
-  }
-
-  DR VPC [icon: aws-vpc] {
-    ...
-  }
+// Outputs
+Outputs [color: blue, label: "Operational Outputs"] {
+  Dashboards [icon: monitor, label: "Dashboards\nP50/P95/P99"]
+  Alerts [icon: monitor, label: "Alerts"]
+  KQL [icon: monitor, label: "KQL Queries"]
+  E2E Tracing [icon: monitor, label: "E2E Tracing"]
 }
-```
 
-## Common Patterns
+// Application telemetry
+Backend > AppInsights: Traces + exceptions [textSize: large]
+AppInsights > LogAnalytics: Backing store [textSize: large]
 
-### Load Balancer + Auto Scaling
-```
-LoadBalancer [icon: aws-elb]
-Server1, Server2, Server3 [icon: aws-ec2]
-LoadBalancer > Server1, Server2, Server3
-```
+// Azure diagnostics
+OpenAI Svc > LogAnalytics: Diagnostics [textSize: large]
+AISearch Svc > LogAnalytics: Diagnostics [textSize: large]
+CosmosDB Svc > LogAnalytics: Diagnostics [textSize: large]
+KeyVault Svc > LogAnalytics: Diagnostics [textSize: large]
+DocIntel Svc > LogAnalytics: Diagnostics [textSize: large]
 
-### Primary-Replica Database
+// Outputs
+LogAnalytics > Dashboards [textSize: large]
+LogAnalytics > Alerts [textSize: large]
+LogAnalytics > KQL [textSize: large]
+AppInsights > E2E Tracing [textSize: large]
 ```
-Primary [icon: postgres, label: "Primary"]
-Replica1, Replica2 [icon: postgres, label: "Read Replica"]
-Primary > Replica1, Replica2: Replication
-```
-
-### Cache-Aside Pattern
-```
-App > Cache: Check Cache
-Cache --> App: Cache Miss
-App > Database: Query DB
-App > Cache: Update Cache
-```
-
-### Pub/Sub Messaging
-```
-Publisher1, Publisher2 > Topic
-Topic > Subscriber1, Subscriber2, Subscriber3
-```
-
-## References
-
-- **Official Examples:** https://docs.eraser.io/docs/examples
-- **Syntax Guide:** https://docs.eraser.io/docs/syntax
-- **Icon Reference:** See eraser-icon-reference.md in this directory
