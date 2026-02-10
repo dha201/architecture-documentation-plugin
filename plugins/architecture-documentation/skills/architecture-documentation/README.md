@@ -58,23 +58,30 @@ myLambda --> myS3
 @enduml' -o diagram.svg
 ```
 
-## Diagram Engine: Kroki.io
+## Diagram Engines
 
-This skill uses **Kroki.io** — a unified REST API that wraps 25+ diagram engines (PlantUML, D2, Mermaid, etc.) behind a single endpoint.
+Three diagram engines are supported. Choose based on your needs:
+
+| Engine | Strengths | Cloud Icons | Rendering |
+|--------|-----------|-------------|-----------|
+| **PlantUML/Kroki** (default) | 900+ AWS icons in stdlib, mature C4 | Extensive (stdlib) | Free via Kroki API |
+| **Mermaid** | GitHub/GitLab native, `architecture-beta` type | Iconify ecosystem (~20 AWS in logos pack) | Native or Kroki |
+| **Eraser** | Visual styling (watercolor, bold) | 700+ AWS, 500+ GCP | Requires API key |
+
+### Kroki.io (PlantUML + Mermaid)
+
+Unified REST API wrapping 25+ diagram engines behind a single endpoint.
 
 - **API:** Simple POST with plain text, returns SVG/PNG
 - **Cloud Icons:** Full AWS/Azure/GCP via PlantUML stdlib
 - **Free:** ~100 requests/minute on public instance; self-host via Docker for unlimited
-- **Output:** SVG, PNG, JPEG, PDF
-
-### Self-Hosting Kroki
 
 ```bash
 # Quick start (PlantUML, GraphViz, D2, etc.)
 docker run -p8000:8000 yuzutech/kroki
 
-# Full stack with Mermaid support
-docker compose up -d   # using docker-compose.yml from kroki-syntax.md
+# Full stack with Mermaid support (requires companion container)
+docker compose up -d   # using docker-compose.yml from mermaid-syntax.md
 ```
 
 ### Kroki Endpoints
@@ -87,6 +94,10 @@ docker compose up -d   # using docker-compose.yml from kroki-syntax.md
 | D2 | `POST /d2/svg` |
 | GraphViz | `POST /graphviz/svg` |
 
+### Mermaid Native Rendering
+
+Mermaid diagrams render natively on GitHub and GitLab without any API calls. Use `architecture-beta` for cloud topology and `C4Container`/`C4Context` for system modeling. Only the 5 built-in icons (`cloud`, `database`, `disk`, `internet`, `server`) work on these platforms — for branded cloud icons, render locally with the Mermaid CLI (`mmdc`) and `registerIconPacks()`.
+
 ## Documentation Template
 
 The generated documentation follows this structure:
@@ -94,7 +105,7 @@ The generated documentation follows this structure:
 ```
 1. Context & Scope
    - Business goals
-   - System context diagram (PlantUML)
+   - System context diagram (PlantUML, Mermaid, or Eraser)
 
 2. Architecture Constraints & Principles
    - Why this approach?
@@ -165,6 +176,53 @@ LAYOUT_WITH_LEGEND()
 @enduml
 ```
 
+## Mermaid Diagram Syntax
+
+Architecture diagrams using Mermaid's dedicated `architecture-beta` type:
+
+```mermaid
+architecture-beta
+    group vpc(cloud)[AWS Cloud]
+    group private(cloud)[Private Subnet] in vpc
+
+    service users(internet)[End Users]
+    service alb(server)[Load Balancer] in vpc
+    service app(server)[App Service] in private
+    service db(database)[PostgreSQL] in private
+
+    users:R --> L:alb
+    alb:B --> T:app
+    app:R --> L:db
+```
+
+With registered Iconify icon packs (local rendering only):
+
+```mermaid
+architecture-beta
+    group vpc(logos:aws)[AWS Cloud]
+    service apigw(logos:aws-api-gateway)[API Gateway] in vpc
+    service lambda(logos:aws-lambda)[Lambda] in vpc
+    service db(logos:aws-aurora)[Aurora DB] in vpc
+
+    apigw:R --> L:lambda
+    lambda:R --> L:db
+```
+
+### Mermaid C4 Diagrams
+
+```mermaid
+C4Container
+    title Container Diagram
+
+    Person(user, "User", "End user")
+    System_Boundary(sys, "System") {
+        Container(app, "App", "React", "SPA")
+        ContainerDb(db, "DB", "PostgreSQL", "Data store")
+    }
+    Rel(user, app, "Uses", "HTTPS")
+    Rel(app, db, "Queries", "SQL")
+```
+
 ## Render Script Options
 
 | Option | Description | Default |
@@ -174,12 +232,14 @@ LAYOUT_WITH_LEGEND()
 | `--replace` | Replace code blocks with image refs | `false` |
 | `--base-url <url>` | Kroki instance URL | `https://kroki.io` |
 
-The script auto-detects C4 diagrams (by checking for `!include <C4/...>`) and routes them to the correct `/c4plantuml/` endpoint.
+The script auto-detects diagram types: C4 PlantUML routes to `/c4plantuml/`, regular PlantUML to `/plantuml/`, and Mermaid (```mermaid fences) to `/mermaid/`.
 
 ## Reference Materials
 
 ### 1. **example-output.pdf**
 Gold standard example showing the expected documentation quality and structure.
+
+### PlantUML/Kroki
 
 ### 2. **kroki-syntax.md**
 Complete syntax reference including:
@@ -210,10 +270,51 @@ Comprehensive cloud icon catalog:
 - CI/CD pipeline
 - C4 deployment diagram
 
+### Mermaid
+
+### 5. **mermaid-syntax.md**
+Complete Mermaid syntax reference:
+- Architecture diagram (`architecture-beta`) — groups, services, edges, junctions
+- C4 diagram types (Context, Container, Component, Dynamic, Deployment)
+- Flowchart icon shapes (`@{}` syntax with Iconify icons)
+- Rendering options (Kroki, Mermaid CLI, browser with registerIconPacks)
+- Platform limitations (GitHub/GitLab vs local rendering)
+- Comparison table: when to use Mermaid vs PlantUML vs Eraser
+
+### 6. **mermaid-icon-reference.md**
+Mermaid icon catalog:
+- 5 built-in icons (cloud, database, disk, internet, server)
+- Icon registration API (CDN fetch, npm lazy load, npm direct, custom SVG)
+- 10 recommended Iconify packs for cloud architecture
+- AWS icons via `logos` pack (EC2, Lambda, S3, Aurora, API Gateway, etc.)
+- Azure icons via `logos` pack (Functions, Cosmos DB, Blob Storage, etc.)
+- GCP icons via `logos` pack (Cloud Functions, BigQuery, Pub/Sub, etc.)
+- Kubernetes & container icons
+- General technology icons (Node.js, Python, PostgreSQL, Redis, etc.)
+- Font Awesome and Material Design icons for generic concepts
+
+### 7. **mermaid-diagram-examples.md**
+13 real-world Mermaid diagram examples:
+- AWS three-tier web application (built-in icons)
+- AWS cloud architecture (logos icon pack)
+- Microservices event-driven architecture
+- Azure AI RAG system
+- GCP data pipeline
+- Kubernetes deployment with junctions
+- CI/CD pipeline (GitHub Actions → ArgoCD → K8s)
+- C4 system context diagram
+- C4 container diagram
+- C4 deployment diagram
+- Flowchart with cloud icon shapes
+- Multi-region high availability
+- Serverless event-driven architecture
+
 ## Key Features
 
-- **Cloud-native diagrams:** AWS/Azure/GCP icons rendered as proper architecture diagrams
-- **C4 model support:** System context, container, component, and deployment diagrams
+- **Cloud-native diagrams:** AWS/Azure/GCP icons via PlantUML stdlib (900+) or Mermaid Iconify packs
+- **Three diagram engines:** PlantUML/Kroki (default), Mermaid (GitHub native), Eraser (visual styling)
+- **C4 model support:** System context, container, component, and deployment diagrams (both PlantUML and Mermaid)
+- **GitHub/GitLab native:** Mermaid diagrams render directly in markdown without any API calls
 - **Free rendering:** No API key needed — Kroki.io public instance handles ~100 req/min
 - **Self-hostable:** Docker one-liner for unlimited rendering
 - **Detailed transformations:** Shows exact input → output at each stage

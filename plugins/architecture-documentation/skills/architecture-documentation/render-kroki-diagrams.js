@@ -1,14 +1,19 @@
 #!/usr/bin/env node
 
 /**
- * PlantUML diagrams embedded in architecture docs can be 5-10 per file,
- * and manually copy-pasting each into Kroki's web UI is tedious. This
- * script extracts all PlantUML blocks from a markdown file and renders
- * them in batch via the Kroki REST API.
+ * Architecture docs typically embed 5-10 diagrams per file across PlantUML
+ * and Mermaid. Manually copy-pasting each into Kroki's web UI is tedious.
+ * This script extracts all PlantUML and Mermaid blocks from a markdown file
+ * and renders them in batch via the Kroki REST API.
  *
- * Detects C4 diagrams (those including C4/ headers) and routes them to
- * the /c4plantuml/ endpoint; all others go to /plantuml/. Falls back
- * to saving raw .puml files when the API is unreachable.
+ * Routing logic:
+ *   - C4 PlantUML (includes C4/ headers) → /c4plantuml/ endpoint
+ *   - Regular PlantUML → /plantuml/ endpoint
+ *   - Mermaid → /mermaid/ endpoint
+ *
+ * Falls back to saving raw source files (.puml/.mmd) when the API is
+ * unreachable. Note: Kroki's Mermaid support requires the kroki-mermaid
+ * companion container when self-hosting (see docker-compose in mermaid-syntax.md).
  *
  * Usage:
  *   ./render-kroki-diagrams.js <markdown-file> [options]
@@ -52,7 +57,7 @@ for (let i = 1; i < args.length; i++) {
       console.log(`
 Kroki Diagram Renderer
 
-Extracts PlantUML diagrams from markdown and renders them via Kroki API.
+Extracts PlantUML and Mermaid diagrams from markdown and renders them via Kroki API.
 
 Usage:
   ./render-kroki-diagrams.js <markdown-file> [options]
@@ -62,6 +67,11 @@ Options:
   --format <format>     Output format: svg or png (default: svg)
   --replace             Replace diagram code blocks with image references in markdown
   --base-url <url>      Kroki instance URL (default: https://kroki.io)
+
+Supported diagram types:
+  - PlantUML (```plantuml or bare ``` with @startuml/@enduml)
+  - C4 PlantUML (auto-detected, routed to /c4plantuml/)
+  - Mermaid (```mermaid fences)
 
 Examples:
   ./render-kroki-diagrams.js Architecture.md
@@ -89,12 +99,13 @@ if (!fs.existsSync(options.outputDir)) {
 
 function extractDiagrams(markdown) {
   const diagrams = [];
-  const codeBlockRegex = /```(?:plantuml)?\s*\n([\s\S]*?@startuml[\s\S]*?@enduml[\s\S]*?)```/g;
-
-  let match;
   let diagramIndex = 0;
 
-  while ((match = codeBlockRegex.exec(markdown)) !== null) {
+  // Extract PlantUML blocks (@startuml/@enduml inside ```plantuml or bare ``` fences)
+  const plantumlRegex = /```(?:plantuml)?\s*\n([\s\S]*?@startuml[\s\S]*?@enduml[\s\S]*?)```/g;
+  let match;
+
+  while ((match = plantumlRegex.exec(markdown)) !== null) {
     const code = match[1].trim();
     const nameMatch = code.match(/@startuml\s+(.+)/);
     const commentMatch = code.match(/'\s*(?:Kroki|PlantUML)\s*(?:diagram)?:?\s*(.+)/i);
@@ -113,6 +124,28 @@ function extractDiagrams(markdown) {
       code: code,
       fullMatch: match[0],
       diagramType: isC4 ? 'c4plantuml' : 'plantuml',
+      sourceExt: 'puml',
+    });
+  }
+
+  // Extract Mermaid blocks (```mermaid fences)
+  const mermaidRegex = /```mermaid\s*\n([\s\S]*?)```/g;
+
+  while ((match = mermaidRegex.exec(markdown)) !== null) {
+    const code = match[1].trim();
+    // Derive name from first meaningful keyword or comment
+    const commentMatch = code.match(/%%\s*(.+)/);
+    const titleMatch = code.match(/title\s+(.+)/);
+    const diagramName = commentMatch ? commentMatch[1].trim() :
+                        titleMatch ? titleMatch[1].trim() :
+                        `mermaid-${++diagramIndex}`;
+
+    diagrams.push({
+      name: diagramName,
+      code: code,
+      fullMatch: match[0],
+      diagramType: 'mermaid',
+      sourceExt: 'mmd',
     });
   }
 
@@ -170,8 +203,9 @@ async function main() {
   const diagrams = extractDiagrams(markdown);
 
   if (diagrams.length === 0) {
-    console.log('No PlantUML diagrams found in markdown file.');
-    console.log('Diagrams must be wrapped in @startuml/@enduml within code blocks.');
+    console.log('No diagrams found in markdown file.');
+    console.log('PlantUML: wrap in @startuml/@enduml within ```plantuml fences.');
+    console.log('Mermaid: use ```mermaid fences.');
     return;
   }
 
@@ -201,8 +235,8 @@ async function main() {
     } catch (error) {
       console.error(`  -> Error: ${error.message}`);
 
-      const pumlFilename = `${sanitizeFilename(diagram.name)}.puml`;
-      const filepath = path.join(options.outputDir, pumlFilename);
+      const sourceFilename = `${sanitizeFilename(diagram.name)}.${diagram.sourceExt || 'puml'}`;
+      const filepath = path.join(options.outputDir, sourceFilename);
       fs.writeFileSync(filepath, diagram.code);
       console.log(`  -> Saved source: ${filepath}`);
     }

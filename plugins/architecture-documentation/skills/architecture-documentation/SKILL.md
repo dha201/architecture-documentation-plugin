@@ -30,7 +30,7 @@ Architecture Documentation Progress:
 - [ ] Phase 3: Data flow traced (request lifecycle, transformations)
 - [ ] Phase 4: Business context extracted (README, comments, code)
 - [ ] Phase 5: Documentation generated following structure below
-- [ ] Phase 6: Diagrams created (PlantUML via Kroki and/or Eraser syntax)
+- [ ] Phase 6: Diagrams created (PlantUML via Kroki, Mermaid, and/or Eraser syntax)
 - [ ] Phase 7: Engineering analysis complete (all "why" questions answered)
 - [ ] Phase 8: Quality validation passed
 ```
@@ -152,7 +152,7 @@ Follow this structure (see example-output.pdf for full reference):
    - Identify stakeholders (who uses this?)
 
 3. **System Context Diagram:**
-   - Create diagram using either PlantUML/Kroki (see kroki-syntax.md) or Eraser (see eraser-syntax.md)
+   - Create diagram using PlantUML/Kroki (see kroki-syntax.md), Mermaid (see mermaid-syntax.md), or Eraser (see eraser-syntax.md)
    - Show: system as a box, external actors (users, services, databases), connections
 
 4. **High-Level Architecture:**
@@ -186,11 +186,13 @@ Follow this structure (see example-output.pdf for full reference):
 
 ### Phase 3: Diagram Generation
 
-Two diagram engines are available. Choose based on needs:
+Three diagram engines are available. Choose based on needs:
 
-**Option A: PlantUML via Kroki (default)** — Free, self-hostable, 25+ diagram engines, cloud icons in stdlib.
+**Option A: PlantUML via Kroki (default)** — Free, self-hostable, 25+ diagram engines, 900+ AWS cloud icons in stdlib.
 
-**Option B: Eraser** — Concise syntax, visual styling (watercolor, bold), requires API key.
+**Option B: Mermaid** — GitHub/GitLab native rendering, dedicated `architecture-beta` diagram type, C4 support, Iconify icon ecosystem.
+
+**Option C: Eraser** — Concise syntax, visual styling (watercolor, bold), requires API key.
 
 #### PlantUML/Kroki Diagrams
 
@@ -220,6 +222,70 @@ api --> db : SQL Queries
 - **PlantUML with cloud icons:** `POST https://kroki.io/plantuml/svg`
 - **C4 model diagrams:** `POST https://kroki.io/c4plantuml/svg`
 
+#### Mermaid Diagrams
+
+Generate Mermaid diagrams using the `architecture-beta` type for cloud topology or C4 types for system modeling (see mermaid-syntax.md and mermaid-icon-reference.md):
+
+**Architecture diagram (built-in icons — works on GitHub/GitLab natively):**
+
+````
+```mermaid
+architecture-beta
+    group vpc(cloud)[AWS Cloud]
+    group private(cloud)[Private Subnet] in vpc
+
+    service users(internet)[End Users]
+    service api(server)[API Service] in vpc
+    service app(server)[App Server] in private
+    service db(database)[Database] in private
+
+    users:R --> L:api
+    api:B --> T:app
+    app:R --> L:db
+```
+````
+
+**Architecture diagram (with registered Iconify icons — requires local rendering):**
+
+````
+```mermaid
+architecture-beta
+    group vpc(logos:aws)[AWS Cloud]
+    service users(internet)[End Users]
+    service apigw(logos:aws-api-gateway)[API Gateway] in vpc
+    service lambda(logos:aws-lambda)[Lambda] in vpc
+    service db(logos:aws-aurora)[Aurora DB] in vpc
+
+    users:R --> L:apigw
+    apigw:R --> L:lambda
+    lambda:R --> L:db
+```
+````
+
+**C4 container diagram:**
+
+````
+```mermaid
+C4Container
+    title Container Diagram
+
+    Person(user, "User", "End user")
+    System_Boundary(sys, "My System") {
+        Container(app, "App", "React", "Frontend SPA")
+        ContainerDb(db, "Database", "PostgreSQL", "User data")
+    }
+    System_Ext(ext, "External API", "Third-party service")
+
+    Rel(user, app, "Uses", "HTTPS")
+    Rel(app, db, "Reads/Writes", "SQL")
+    Rel(app, ext, "Calls", "REST")
+```
+````
+
+**Mermaid rendering:** Use `render-kroki-diagrams.js` (routes to `/mermaid/` endpoint) or render natively on GitHub/GitLab. For full Iconify icon support, use Mermaid CLI (`mmdc`) or browser rendering with `registerIconPacks()`.
+
+**Platform note:** GitHub and GitLab render Mermaid natively but only support the 5 built-in icons (`cloud`, `database`, `disk`, `internet`, `server`). For branded cloud icons, render locally and embed as images.
+
 #### Eraser Diagrams
 
 Generate Eraser diagram code (see eraser-syntax.md):
@@ -247,6 +313,11 @@ API > Database: SQL Queries
 - **kroki-syntax.md** - PlantUML syntax, Kroki API, C4 model macros
 - **icon-reference.md** - Cloud icon catalog (AWS 900+, Azure 400+, GCP, K8s macros)
 - **diagram-examples.md** - Real-world examples with complete PlantUML code
+
+**Mermaid:**
+- **mermaid-syntax.md** - Architecture diagram syntax, C4 types, flowchart icon shapes, rendering options
+- **mermaid-icon-reference.md** - Iconify icon packs (logos, FA, MDI), AWS/Azure/GCP icon names, registration API
+- **mermaid-diagram-examples.md** - 13 real-world examples (architecture, C4, flowchart with cloud icons)
 
 **Eraser:**
 - **eraser-syntax.md** - Eraser syntax reference (nodes, groups, connections, properties)
@@ -289,8 +360,8 @@ After generating documentation, validate immediately using this checklist:
 - [ ] Matrix includes all major components with all required columns (Component, Primary Responsibility, Key Dependencies, Input/Output, Failure Modes, Recovery Strategies)
 - [ ] Each component has Purpose, Implementation Details, Engineering Analysis
 - [ ] Data flow walkthrough includes Input → Output transformations
-- [ ] Diagrams use correct syntax (PlantUML verified against kroki-syntax.md, or Eraser verified against eraser-syntax.md)
-- [ ] PlantUML blocks wrapped in `@startuml`/`@enduml` within ```plantuml fences; Eraser blocks in ```eraser fences
+- [ ] Diagrams use correct syntax (PlantUML verified against kroki-syntax.md, Mermaid against mermaid-syntax.md, or Eraser against eraser-syntax.md)
+- [ ] PlantUML blocks wrapped in `@startuml`/`@enduml` within ```plantuml fences; Mermaid blocks in ```mermaid fences; Eraser blocks in ```eraser fences
 
 ### 2. Depth Validation (Critical)
 - [ ] Every technical decision has "why" explanation (not just "what")
@@ -461,6 +532,11 @@ This skill includes comprehensive reference materials:
 - **icon-reference.md** - Cloud icon catalog (AWS 900+, Azure 400+, GCP, K8s with exact macro signatures)
 - **diagram-examples.md** - 10 real-world diagram examples with complete PlantUML code
 
+**Mermaid:**
+- **mermaid-syntax.md** - Architecture diagram (`architecture-beta`), C4 types, flowchart icon shapes, rendering options, platform limitations
+- **mermaid-icon-reference.md** - Iconify icon packs (logos, FA, MDI, etc.), AWS/Azure/GCP/K8s icon names, registration API, custom icon packs
+- **mermaid-diagram-examples.md** - 13 real-world examples (AWS/Azure/GCP architecture, C4 context/container/deployment, flowchart with icons, multi-region HA)
+
 **Eraser:**
 - **eraser-syntax.md** - Eraser diagram-as-code syntax, properties, connections, layout, patterns
 - **eraser-icon-reference.md** - Eraser icon catalog (AWS 700+, GCP 500+, Azure 400+, K8s, tech logos)
@@ -470,19 +546,20 @@ This skill includes comprehensive reference materials:
 - **example-output.pdf** - Gold standard example of expected documentation quality
 
 **When generating diagrams, reference these files to:**
-- Find correct cloud icon macros and include paths (use icon-reference.md or eraser-icon-reference.md)
+- Find correct cloud icon macros and include paths (use icon-reference.md, mermaid-icon-reference.md, or eraser-icon-reference.md)
 - Learn PlantUML syntax for groups, connections, C4 model, styling (use kroki-syntax.md)
+- Learn Mermaid syntax for architecture diagrams, C4 model, icon shapes (use mermaid-syntax.md)
 - Learn Eraser syntax for nodes, groups, connections, styling (use eraser-syntax.md)
-- See real-world patterns and examples (use diagram-examples.md or eraser-diagram-examples.md)
+- See real-world patterns and examples (use diagram-examples.md, mermaid-diagram-examples.md, or eraser-diagram-examples.md)
 
 ## Diagram Rendering
 
 After generating documentation, render diagrams with the appropriate script:
 
-### Kroki (PlantUML diagrams)
+### Kroki (PlantUML + Mermaid diagrams)
 
 ```bash
-# Render all PlantUML diagrams from a markdown file
+# Render all PlantUML and Mermaid diagrams from a markdown file
 ./render-kroki-diagrams.js Architecture.md --format svg
 
 # Replace code blocks with image references
@@ -492,7 +569,9 @@ After generating documentation, render diagrams with the appropriate script:
 ./render-kroki-diagrams.js Architecture.md --base-url http://localhost:8000
 ```
 
-The script auto-detects C4 diagrams and routes them to the `/c4plantuml/` endpoint.
+The script auto-detects diagram types: C4 PlantUML routes to `/c4plantuml/`, regular PlantUML to `/plantuml/`, and Mermaid to `/mermaid/`.
+
+**Note:** Kroki's Mermaid rendering requires docker-compose with the `kroki-mermaid` companion container when self-hosting. The public Kroki instance supports Mermaid out of the box.
 
 ### Eraser (Eraser diagrams)
 
@@ -574,7 +653,7 @@ Before finalizing documentation:
 - [ ] All 8 checklist phases completed
 - [ ] All validation checks passed
 - [ ] Every component has detailed engineering analysis
-- [ ] All diagrams use correct syntax (PlantUML with cloud icon macros, or Eraser with proper properties)
+- [ ] All diagrams use correct syntax (PlantUML with cloud icon macros, Mermaid with architecture-beta/C4/flowchart, or Eraser with proper properties)
 - [ ] No vague statements (all specifics with numbers, examples)
 - [ ] Consistent terminology used throughout
 - [ ] Trade-offs explained for major decisions
